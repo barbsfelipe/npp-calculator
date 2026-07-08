@@ -62,6 +62,10 @@
 
     .output-negative{color:#b00020; font-weight:600}
 
+    .aviso-peso{font-size:12px; font-weight:600; padding:8px 10px; border-radius:8px;}
+    .aviso-peso-alerta{color:#8a5a00; background:#fff6e0;}
+    .aviso-peso-bloqueio{color:#b00020; background:#fdeceb;}
+
     /* Layout helpers for responsive */
     #sec-macro .span-3 { grid-column: span 6; }
     @media (max-width:640px){ #sec-macro .span-3 { grid-column: span 12; } }
@@ -80,16 +84,17 @@
     #end-actions{display:flex; justify-content:flex-end; gap:10px; margin-top:22px}
 
     /* ===== Resumo de Prescrição ===== */
-    #overlayResumo{
+    #overlayResumo, #overlayDisclaimer{
       position: fixed; inset: 0; background: rgba(0,0,0,.35);
       display:none; align-items: center; justify-content: center; padding: 24px;
       z-index: 9999;
     }
-    #resumoCard{
+    #resumoCard, #disclaimerCard{
       width: 210mm; max-width: 100%; background: #fff; border-radius: 14px; box-shadow:0 20px 60px rgba(0,0,0,.25);
       padding: 18mm; max-height: 90vh; overflow: auto;
     }
-    #resumoCard h2{margin:0 0 8px 0; font-size:18px}
+    #disclaimerCard{width:120mm}
+    #resumoCard h2, #disclaimerCard h2{margin:0 0 8px 0; font-size:18px}
     #resumoCard .muted{color:#666; font-size:12px; margin-bottom:12px}
     .resumo-sec{margin-top:14px}
     .resumo-sec h3{font-size:13px; margin:8px 0}
@@ -132,8 +137,8 @@
           <input id="nome" name="nome" type="text" placeholder="Nome do paciente" autocomplete="name" />
         </div>
         <div class="field span-3">
-          <label for="idade">Idade</label>
-          <input id="idade" name="idade" type="text" placeholder="Ex.: 2 a 3 m" inputmode="numeric" />
+          <label for="idade">Idade (dias/meses/anos)</label>
+          <input id="idade" name="idade" type="text" placeholder="Ex.: 15 dias / 3 m / 2 a" inputmode="numeric" />
         </div>
         <div class="field span-3 unit-wrap">
           <label for="peso">Peso</label>
@@ -145,6 +150,7 @@
           <input id="pesoCalorico" name="pesoCalorico" type="text" placeholder="—" readonly />
           <span class="unit" aria-hidden="true">kcal</span>
         </div>
+        <div id="avisoPeso" class="field span-12" style="display:none"></div>
         <div class="field span-3">
           <label for="setor">Setor</label>
           <input id="setor" name="setor" type="text" placeholder="Ex.: UTI Pediátrica" />
@@ -220,23 +226,37 @@
     <section aria-label="Micronutrientes — Eletrólitos">
       <div class="section-title">Micronutrientes — Eletrólitos</div>
       <div class="grid row" id="sec-micro">
+        <div class="field span-3">
+          <label for="srcNaClSelect">Cloreto de sódio — apresentação</label>
+          <select id="srcNaClSelect">
+            <option value="10" selected>NaCl 10% (1,7 mEq/mL)</option>
+            <option value="20">NaCl 20% (3,4 mEq/mL)</option>
+          </select>
+        </div>
         <div class="field span-3 unit-wrap">
-          <label for="doseNaCl10">Cloreto de sódio 10% (dose)</label>
+          <label for="doseNaCl10">Cloreto de sódio (dose)</label>
           <input id="doseNaCl10" type="text" placeholder="0,0" inputmode="decimal" />
           <span class="unit" aria-hidden="true">mEq/kg/dia</span>
         </div>
         <div class="field span-3 unit-wrap">
-          <label for="volNaCl10">Cloreto de sódio 10% (auto)</label>
+          <label for="volNaCl10">Cloreto de sódio (auto)</label>
           <input id="volNaCl10" type="text" placeholder="—" readonly />
           <span class="unit" aria-hidden="true">ml</span>
         </div>
+        <div class="field span-3">
+          <label for="srcKClSelect">Cloreto de potássio — apresentação</label>
+          <select id="srcKClSelect">
+            <option value="10" selected>KCl 10% (1,34 mEq/mL)</option>
+            <option value="191">KCl 19,1% (2,56 mEq/mL)</option>
+          </select>
+        </div>
         <div class="field span-3 unit-wrap">
-          <label for="doseKCl10">Cloreto de potássio 10% (dose)</label>
+          <label for="doseKCl10">Cloreto de potássio (dose)</label>
           <input id="doseKCl10" type="text" placeholder="0,0" inputmode="decimal" />
           <span class="unit" aria-hidden="true">mEq/kg/dia</span>
         </div>
         <div class="field span-3 unit-wrap">
-          <label for="volKCl10">Cloreto de potássio 10% (auto)</label>
+          <label for="volKCl10">Cloreto de potássio (auto)</label>
           <input id="volKCl10" type="text" placeholder="—" readonly />
           <span class="unit" aria-hidden="true">ml</span>
         </div>
@@ -445,6 +465,17 @@
     </div>
   </div>
 
+  <!-- Overlay Aviso de responsabilidade -->
+  <div id="overlayDisclaimer" role="dialog" aria-modal="true" aria-labelledby="disclaimerTitulo">
+    <div id="disclaimerCard">
+      <h2 id="disclaimerTitulo">Aviso importante</h2>
+      <p>Esta calculadora é uma ferramenta de apoio ao cálculo de Nutrição Parenteral e <b>não substitui o raciocínio clínico</b>. A responsabilidade pela prescrição, pelas doses e pela conduta terapêutica é exclusivamente do médico prescritor.</p>
+      <div class="resumo-actions">
+        <button type="button" id="btnFecharDisclaimer">Entendi</button>
+      </div>
+    </div>
+  </div>
+
   <script>
     // ===== Utilidades =====
     function parseNumberBR(v){
@@ -485,7 +516,9 @@
     const doseG50 = document.getElementById('doseG50'), volG50 = document.getElementById('volG50');
 
     // Micros
+    const srcNaClSelect = document.getElementById('srcNaClSelect');
     const doseNaCl10 = document.getElementById('doseNaCl10'), volNaCl10 = document.getElementById('volNaCl10');
+    const srcKClSelect = document.getElementById('srcKClSelect');
     const doseKCl10 = document.getElementById('doseKCl10'), volKCl10 = document.getElementById('volKCl10');
     const doseMg10 = document.getElementById('doseMg10'), volMg10 = document.getElementById('volMg10');
     const doseCaGlu10 = document.getElementById('doseCaGlu10'), volCaGlu10 = document.getElementById('volCaGlu10');
@@ -527,6 +560,7 @@
     const setor = document.getElementById('setor');
     const leito = document.getElementById('leito');
     const registro = document.getElementById('registro');
+    const avisoPeso = document.getElementById('avisoPeso');
 
     // ===== Peso calórico =====
     function calcularPesoCalorico(p){
@@ -542,10 +576,26 @@
     }
 
     // ===== Cálculos =====
-    const FACT_NACL10=1.7, FACT_KCL10=1.34, FACT_MG10=0.8, FACT_CAGLU10=0.5, FACT_MVI=2, FACT_ZN=230, FACT_SE=60, FACT_GLN=0.2, MG_PER_ML_P=31;
+    const FACT_NACL10=1.7, FACT_NACL20=3.4, FACT_KCL10=1.34, FACT_KCL191=2.56, FACT_MG10=0.8, FACT_CAGLU10=0.5, FACT_MVI=2, FACT_ZN=230, FACT_SE=60, FACT_GLN=0.2, MG_PER_ML_P=31;
     const MEQ_PER_ML_NA_GLY = 2, MEQ_PER_ML_K_PHOS = 2;
+    const LIMIAR_AVISO_PESO = 30, LIMIAR_BLOQUEIO_PESO = 40;
+    const doseFieldIds = ['doseH2O','doseAA','doseLIP','doseG50','doseNaCl10','doseKCl10','doseMg10','doseCaGlu10','dosePmgkg','doseSe','doseZn','doseTE','doseGln'];
+    const selectFieldIds = ['srcPSelect','srcNaClSelect','srcKClSelect'];
 
     function safe(n){ return Number.isFinite(n) ? n : 0; }
+
+    function updateAvisoPeso(P){
+      const bloqueado = Number.isFinite(P) && P >= LIMIAR_BLOQUEIO_PESO;
+      const emAviso = Number.isFinite(P) && P >= LIMIAR_AVISO_PESO && P < LIMIAR_BLOQUEIO_PESO;
+      [...doseFieldIds, ...selectFieldIds].forEach(id => {
+        document.getElementById(id).disabled = bloqueado;
+      });
+      avisoPeso.style.display = (bloqueado || emAviso) ? '' : 'none';
+      avisoPeso.className = 'field span-12 aviso-peso' + (bloqueado ? ' aviso-peso-bloqueio' : (emAviso ? ' aviso-peso-alerta' : ''));
+      avisoPeso.textContent = bloqueado
+        ? 'Peso ≥ 40 kg: NPP individualizada não é recomendada. Utilize soluções padronizadas industrializadas (ex.: Olimel, Kabiven). Os campos de dose foram bloqueados.'
+        : (emAviso ? 'Peso ≥ 30 kg: considere o uso de soluções padronizadas industrializadas (ex.: Olimel, Kabiven) em vez de NPP individualizada.' : '');
+    }
 
     function updatePUI(){
       const chosen = srcPSelect.value !== '';
@@ -559,6 +609,7 @@
 
     function calcVolumes(){
       const P = parseNumberBR(pesoEl.value);
+      updateAvisoPeso(P);
       if(!Number.isFinite(P) || P <= 0){
         [volH2O, volAA, volLIP, volG50, volNaCl10, volKCl10, volMg10, volCaGlu10, volP, volSe, volZn, volTE, volMVI, volGln, somaComponentes, aguaDestilada, volTotal,
          kcalTotais, aporteKcalKg, catDiva, osmolaridade, kTotal, naTotal, concSolucao, relCaP, relGNKcalNP
@@ -581,8 +632,10 @@
       const dG50=parseNumberBR(doseG50.value); const G50=Number.isFinite(dG50)?dG50*P*1.44*2:NaN; volG50.value=Number.isFinite(G50)?formatML(G50):'';
 
       // Eletrólitos (mL)
-      const dNa=parseNumberBR(doseNaCl10.value); const NaVol=(Number.isFinite(dNa)&&Number.isFinite(PC))?(PC*dNa)/FACT_NACL10:NaN; volNaCl10.value=Number.isFinite(NaVol)?formatML(NaVol):'';
-      const dK=parseNumberBR(doseKCl10.value); const KVol=(Number.isFinite(dK)&&Number.isFinite(PC))?(PC*dK)/FACT_KCL10:NaN; volKCl10.value=Number.isFinite(KVol)?formatML(KVol):'';
+      const naFactor = srcNaClSelect.value === '20' ? FACT_NACL20 : FACT_NACL10;
+      const dNa=parseNumberBR(doseNaCl10.value); const NaVol=(Number.isFinite(dNa)&&Number.isFinite(PC))?(PC*dNa)/naFactor:NaN; volNaCl10.value=Number.isFinite(NaVol)?formatML(NaVol):'';
+      const kFactor = srcKClSelect.value === '191' ? FACT_KCL191 : FACT_KCL10;
+      const dK=parseNumberBR(doseKCl10.value); const KVol=(Number.isFinite(dK)&&Number.isFinite(PC))?(PC*dK)/kFactor:NaN; volKCl10.value=Number.isFinite(KVol)?formatML(KVol):'';
       const dMg=parseNumberBR(doseMg10.value); const MgVol=Number.isFinite(dMg)?(P*dMg)/FACT_MG10:NaN; volMg10.value=Number.isFinite(MgVol)?formatML(MgVol):'';
       const dCa=parseNumberBR(doseCaGlu10.value); const CaVol=Number.isFinite(dCa)?(P*dCa)/FACT_CAGLU10:NaN; volCaGlu10.value=Number.isFinite(CaVol)?formatML(CaVol):'';
 
@@ -677,9 +730,13 @@
     pesoEl.addEventListener('input', () => { atualizarPesoCalorico(); calcVolumes(); });
     addListeners([doseH2O, doseAA, doseLIP, doseG50, doseNaCl10, doseKCl10, doseMg10, doseCaGlu10, dosePmgkg, doseSe, doseZn, doseTE, doseGln]);
     srcPSelect.addEventListener('change', () => { updatePUI(); calcVolumes(); });
+    srcNaClSelect.addEventListener('change', calcVolumes);
+    srcKClSelect.addEventListener('change', calcVolumes);
     btnLimpar.addEventListener('click', () => {
       document.querySelectorAll('#editor input').forEach(inp => { if(!inp.readOnly) inp.value=''; else inp.value=''; });
       document.getElementById('srcPSelect').value = '';
+      document.getElementById('srcNaClSelect').value = '10';
+      document.getElementById('srcKClSelect').value = '10';
       calcVolumes(); atualizarPesoCalorico();
     });
 
@@ -716,8 +773,8 @@
         ['Aminoácidos 10%', volAA.value, 'ml'],
         ['Lipídeos 20%', volLIP.value, 'ml'],
         ['Glicose 50%', volG50.value, 'ml'],
-        ['Cloreto de sódio 10%', volNaCl10.value, 'ml'],
-        ['Cloreto de potássio 10%', volKCl10.value, 'ml'],
+        [srcNaClSelect.value === '20' ? 'Cloreto de sódio 20%' : 'Cloreto de sódio 10%', volNaCl10.value, 'ml'],
+        [srcKClSelect.value === '191' ? 'Cloreto de potássio 19,1%' : 'Cloreto de potássio 10%', volKCl10.value, 'ml'],
         ['Sulfato de magnésio 10%', volMg10.value, 'ml'],
         ['Gluconato de cálcio 10%', volCaGlu10.value, 'ml'],
         [srcPSelect.value === 'gly' ? 'Glicerofosfato de sódio' : (srcPSelect.value === 'kphos' ? 'Fosfato de K (2 mEq/mL)' : 'Fósforo'), volP.value, 'ml'],
@@ -755,7 +812,12 @@
     btnVoltar.addEventListener('click', () => { overlayResumo.style.display = 'none'; });
     btnImprimir.addEventListener('click', () => { buildResumo(); window.print(); });
 
-    (function init(){ updatePUI(); })();
+    // ===== Aviso de responsabilidade =====
+    const overlayDisclaimer = document.getElementById('overlayDisclaimer');
+    const btnFecharDisclaimer = document.getElementById('btnFecharDisclaimer');
+    btnFecharDisclaimer.addEventListener('click', () => { overlayDisclaimer.style.display = 'none'; });
+
+    (function init(){ updatePUI(); overlayDisclaimer.style.display = 'flex'; })();
 
     if('serviceWorker' in navigator){
       window.addEventListener('load', () => { navigator.serviceWorker.register('sw.js').catch(()=>{}); });

@@ -1,4 +1,4 @@
-const CACHE = 'npp-calc-v0.5.8';
+const CACHE = 'npp-calc-v0.5.9';
 const ASSETS = [
   './calculadora_npp_v0_5_8-2.html',
   './manifest.json',

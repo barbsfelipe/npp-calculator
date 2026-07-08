@@ -1,3 +1,4 @@
 app/
 CLAUDE.md
 .DS_Store
+.playwright-mcp/
