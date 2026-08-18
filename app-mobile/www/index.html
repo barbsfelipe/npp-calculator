@@ -4,6 +4,7 @@
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
   <title>Calculadora de NPP — Prescrição</title>
+  <script src="capacitor.js"></script>
   <script src="config.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.js"></script>
   <style>
@@ -490,6 +491,7 @@
     <div id="paywallCard">
       <h2 id="paywallTitulo">Seu período gratuito acabou</h2>
       <p>Você já usou as 3 prescrições grátis. Escolha um plano para continuar usando a calculadora sem limites.</p>
+      <div id="paywallStatus" class="sub" style="color:var(--danger); display:none"></div>
       <div class="grid row">
         <div class="field span-6">
           <button type="button" id="btnPlanoMensal" style="width:100%">Mensal — R$49,90/mês</button>
@@ -869,19 +871,25 @@
     btnImprimir.addEventListener('click', () => { buildResumo(); window.print(); });
 
     // ===== Preferences (local, com fallback pra localStorage fora do app nativo) =====
+    // Sem bundler, os plugins do Capacitor não se auto-registram: capacitor.js
+    // (carregado no <head>) só cria window.Capacitor com Plugins={} vazio — cada
+    // plugin precisa ser registrado explicitamente aqui, pelo mesmo nome que o
+    // lado nativo usa (Preferences/Purchases), pra o proxy JS falar com o
+    // código Swift/Kotlin de verdade instalado via `cap sync`.
     function isNativePlatform() {
       return !!(window.Capacitor && window.Capacitor.isNativePlatform && window.Capacitor.isNativePlatform());
     }
+    const PreferencesPlugin = window.Capacitor ? window.Capacitor.registerPlugin('Preferences') : null;
     async function prefsGet(key) {
       if (isNativePlatform()) {
-        const { value } = await window.Capacitor.Plugins.Preferences.get({ key });
+        const { value } = await PreferencesPlugin.get({ key });
         return value;
       }
       return window.localStorage.getItem(key);
     }
     async function prefsSet(key, value) {
       if (isNativePlatform()) {
-        await window.Capacitor.Plugins.Preferences.set({ key, value: String(value) });
+        await PreferencesPlugin.set({ key, value: String(value) });
       } else {
         window.localStorage.setItem(key, String(value));
       }
@@ -897,7 +905,20 @@
     });
 
     // ===== Conta (Supabase Auth) =====
-    const supabaseClient = window.supabase.createClient(window.NPP_CONFIG.supabaseUrl, window.NPP_CONFIG.supabaseAnonKey);
+    // A biblioteca do Supabase vem de CDN — se a rede cair antes desse script
+    // carregar, window.supabase fica undefined. Sem esse try/catch, a linha
+    // abaixo lançaria e pararia a execução do <script> inteiro (nada depois
+    // dela rodaria: nem o aviso legal, nem o trial, nem o paywall).
+    let supabaseClient = null;
+    try {
+      if (window.supabase) {
+        supabaseClient = window.supabase.createClient(window.NPP_CONFIG.supabaseUrl, window.NPP_CONFIG.supabaseAnonKey);
+      } else {
+        console.warn('Supabase indisponível (biblioteca não carregou) — conta/assinatura ficam desativadas nesta sessão.');
+      }
+    } catch (e) {
+      console.warn('Erro ao inicializar o Supabase:', e);
+    }
     const overlayAuth = document.getElementById('overlayAuth');
     const authEmail = document.getElementById('authEmail');
     const authPassword = document.getElementById('authPassword');
@@ -914,15 +935,31 @@
       btnAuthToggle.textContent = mode === 'signup' ? 'Já tenho conta' : 'Criar conta nova';
       authError.style.display = 'none';
     }
-    btnAuthToggle.addEventListener('click', () => { setAuthMode(authMode === 'signup' ? 'login' : 'signup'); });
+    btnAuthToggle.addEventListener('click', () => {
+      const nextMode = authMode === 'signup' ? 'login' : 'signup';
+      if (nextMode === 'login') selectedPlan = null; // trocou pra "já tenho conta", não confirma compra do plano
+      setAuthMode(nextMode);
+    });
 
     async function getCurrentSession() {
+      if (!supabaseClient) return null;
       const { data } = await supabaseClient.auth.getSession();
       return data.session;
     }
 
+    const paywallStatus = document.getElementById('paywallStatus');
+    function showPaywallStatus(text) {
+      paywallStatus.textContent = text;
+      paywallStatus.style.display = 'block';
+    }
+
     btnAuthSubmit.addEventListener('click', async () => {
       authError.style.display = 'none';
+      if (!supabaseClient) {
+        authError.textContent = 'Sem conexão — não é possível criar conta/entrar agora. Tente novamente mais tarde.';
+        authError.style.display = 'block';
+        return;
+      }
       const email = authEmail.value.trim();
       const password = authPassword.value;
       const { data, error } = authMode === 'signup'
@@ -939,9 +976,20 @@
         return;
       }
       overlayAuth.style.display = 'none';
-      await revenueCatLogIn(data.session.user.id);
-      await purchaseSelectedPlan();
-      if (await window.hasActiveSubscription()) { overlayPaywall.style.display = 'none'; }
+      try {
+        await revenueCatLogIn(data.session.user.id);
+        // Confere assinatura já existente antes de tentar comprar de novo —
+        // evita cobrar quem só está entrando numa conta que já assina
+        // (ex: reinstalou o app e escolheu "Já tenho conta").
+        if (await window.hasActiveSubscription()) {
+          overlayPaywall.style.display = 'none';
+        } else {
+          await purchaseSelectedPlan();
+        }
+      } catch (e) {
+        console.warn('Erro ao processar assinatura:', e);
+        showPaywallStatus('Não foi possível concluir a assinatura. Tente novamente ou toque em "Restaurar compra".');
+      }
     });
 
     let selectedPlan = null; // 'monthly' | 'annual'
@@ -952,11 +1000,22 @@
     }
     document.getElementById('btnPlanoMensal').addEventListener('click', () => openAuthForPlan('monthly'));
     document.getElementById('btnPlanoAnual').addEventListener('click', () => openAuthForPlan('annual'));
-    document.getElementById('btnJaTenhoConta').addEventListener('click', () => { overlayAuth.style.display = 'flex'; setAuthMode('login'); });
+    document.getElementById('btnJaTenhoConta').addEventListener('click', () => {
+      selectedPlan = null; // entrando numa conta existente, não é uma compra de plano
+      overlayAuth.style.display = 'flex';
+      setAuthMode('login');
+    });
 
     // ===== Assinatura (RevenueCat) =====
+    // O plugin nativo do RevenueCat se registra como "Purchases" (não
+    // "CapacitorPurchases") — conferido em PurchasesPlugin.kt e no
+    // registerPlugin('Purchases', ...) do pacote JS. Como não usamos a build
+    // JS do pacote (não tem versão pronta pra <script> sem bundler, só ESM
+    // com import de @capacitor/core), registramos o proxy manualmente aqui
+    // mesmo, do jeito que window.Capacitor.registerPlugin permite.
+    const RevenueCatPurchasesPlugin = window.Capacitor ? window.Capacitor.registerPlugin('Purchases') : null;
     function purchasesPlugin() {
-      return window.Capacitor && window.Capacitor.Plugins && window.Capacitor.Plugins.CapacitorPurchases;
+      return RevenueCatPurchasesPlugin;
     }
     let purchasesConfigured = false;
     async function configurePurchases() {
@@ -1007,21 +1066,51 @@
       return Number.isFinite(n) ? n : 0;
     }
 
+    // Trava simples pra evitar que um duplo-toque em "Limpar" consuma duas
+    // unidades do trial antes que a 1ª chamada termine de ler/gravar o contador.
+    let prescriptionGateBusy = false;
     async function tryStartPrescription() {
+      if (prescriptionGateBusy) return false;
+      prescriptionGateBusy = true;
+      try {
+        if (await window.hasActiveSubscription()) { overlayPaywall.style.display = 'none'; return true; }
+        const count = await getTrialCount();
+        if (count >= TRIAL_LIMIT) {
+          overlayPaywall.style.display = 'flex';
+          return false;
+        }
+        await prefsSet(TRIAL_KEY, count + 1);
+        return true;
+      } finally {
+        prescriptionGateBusy = false;
+      }
+    }
+
+    // Usado só na abertura do app: a tela em branco da 1ª instalação conta
+    // como a prescrição 1 (spec), mas reabrir o app em outro dia NÃO deve
+    // consumir mais uma unidade sozinho — só cliques em "Limpar/Nova" (via
+    // tryStartPrescription acima) fazem isso. Sem essa distinção, minimizar
+    // e reabrir o app repetidas vezes esgotava o trial sem nenhuma
+    // prescrição de verdade ter sido feita.
+    async function checkAccessOnLaunch() {
       if (await window.hasActiveSubscription()) { overlayPaywall.style.display = 'none'; return true; }
-      const count = await getTrialCount();
-      if (count >= TRIAL_LIMIT) {
+      const raw = await prefsGet(TRIAL_KEY);
+      if (raw === null || raw === undefined) {
+        await prefsSet(TRIAL_KEY, 1);
+        return true;
+      }
+      const count = parseInt(raw, 10);
+      if (Number.isFinite(count) && count >= TRIAL_LIMIT) {
         overlayPaywall.style.display = 'flex';
         return false;
       }
-      await prefsSet(TRIAL_KEY, count + 1);
       return true;
     }
 
     (async function init(){
       updatePUI();
       await configurePurchases();
-      const allowed = await tryStartPrescription();
+      const allowed = await checkAccessOnLaunch();
       if (allowed) {
         const accepted = await prefsGet(DISCLAIMER_KEY);
         if (accepted !== '1') { overlayDisclaimer.style.display = 'flex'; }

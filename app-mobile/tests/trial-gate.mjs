@@ -24,6 +24,15 @@ await page.waitForSelector('#overlayDisclaimer', { state: 'hidden' });
 const disclaimerFlag = await page.evaluate(() => window.localStorage.getItem('disclaimerAccepted'));
 assert.equal(disclaimerFlag, '1', 'aviso legal deveria ficar marcado como aceito');
 
+// 1b) Recarregar o app (simula reabrir depois de minimizado) NÃO deve
+// consumir mais uma unidade do trial sozinho — só cliques em Limpar contam
+// depois da 1ª abertura. Reabrir também não deve mostrar o aviso legal de
+// novo, já que ele foi persistido no passo anterior.
+await page.reload();
+count = await page.evaluate(() => window.localStorage.getItem('trialUsageCount'));
+assert.equal(count, '1', 'reabrir o app não deveria consumir outra unidade do trial');
+assert.equal(await page.isVisible('#overlayDisclaimer'), false, 'aviso legal não deveria reaparecer após já aceito');
+
 // 2) Limpar #1 (uso 2) — permitido, paywall não aparece, campo é limpo.
 await page.fill('#peso', '8,5');
 await page.click('#btnLimpar');

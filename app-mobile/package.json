@@ -3,7 +3,8 @@
   "version": "1.0.0",
   "description": "Calculadora de Nutrição Parenteral (NPP) — app mobile (iOS/Android)",
   "scripts": {
-    "test": "node tests/calc-parity.mjs",
+    "test": "node tests/calc-parity.mjs && node tests/trial-gate.mjs && node tests/paywall.mjs",
+    "test:auth": "node tests/auth-flow.mjs",
     "icons": "node resources/render-icon.mjs && npx capacitor-assets generate"
   },
   "keywords": [],
