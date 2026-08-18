@@ -163,7 +163,17 @@ assert.equal(count, '3', 'contador não deveria passar de 3 quando bloqueado');
 assert.equal(await page.inputValue('#peso'), '9,0', 'campo peso não deveria ter sido limpo quando bloqueado');
 
 // 5) Assinante ativo (mock) ignora o contador mesmo com trial esgotado.
-await page.evaluate(() => { window.hasActiveSubscription = async () => true; });
+// O paywall ainda está visível do passo 4 (Task 2 não fecha o paywall no
+// caminho "já assinante" — isso só é implementado na Task 4, que também
+// dispara esse caminho de verdade após uma compra). Escondemos manualmente
+// aqui só pra conseguir clicar em #btnLimpar de novo (senão o overlay,
+// com position:fixed;inset:0, intercepta o clique e o Playwright trava
+// esperando ele ficar clicável) — isso testa a decisão do gate em si,
+// não a UI de fechamento do paywall.
+await page.evaluate(() => {
+  window.hasActiveSubscription = async () => true;
+  document.getElementById('overlayPaywall').style.display = 'none';
+});
 await page.click('#btnLimpar');
 assert.equal(await page.isVisible('#overlayPaywall'), false, 'assinante ativo não deveria ver o paywall');
 
