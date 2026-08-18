@@ -1,6 +1,6 @@
 # Calculadora de NPP — transformação em app pago (iOS/Android + web)
 
-**Data:** 2026-08-17
+**Data:** 2026-08-17 (revisado em 2026-08-18 — trial gratuito e preços mensal/anual)
 **Status:** aprovado para planejamento
 
 ## Contexto
@@ -14,7 +14,7 @@ Nenhuma das duas está preparada para venda nas lojas (App Store / Google Play) 
 
 ## Objetivo
 
-Transformar a calculadora em um produto pago, vendido por assinatura anual, disponível como:
+Transformar a calculadora em um produto pago — download grátis com trial de uso, depois assinatura mensal ou anual —, disponível como:
 
 - App nativo iOS e Android (lojas Apple/Google), via wrapper Capacitor sobre a lógica existente.
 - Versão web (para uso em PC), com login e assinatura, substituindo o acesso gratuito atual.
@@ -26,8 +26,10 @@ Público-alvo: profissionais de saúde individuais (compra pessoal, B2C) — nã
 ### Dentro do escopo
 
 - Empacotar a calculadora atual como app nativo iOS + Android via Capacitor, **sem reescrever as fórmulas clínicas**.
-- Sistema de conta (login/senha) via Supabase Auth, compartilhado entre mobile e web.
-- Assinatura anual única que libera acesso em mobile e web pela mesma conta, via RevenueCat (App Store, Google Play e RevenueCat Web Billing para o checkout web).
+- **Trial gratuito de uso** (não por tempo): 3 prescrições grátis sem precisar de conta — conta a tela inicial (1ª prescrição, já aberta ao instalar) mais cada clique em "Limpar/Nova". Contador local no aparelho (`@capacitor/preferences`), sem servidor — reinstalar o app reseta o trial (limitação aceita, ver Arquitetura técnica).
+- Na 4ª tentativa de prescrição nova, o formulário não abre — mostra direto a tela de assinatura (paywall) em vez de bloquear campos.
+- Sistema de conta (login/senha) via Supabase Auth, compartilhado entre mobile e web — criado no momento da assinatura (não antes, durante o trial).
+- **Duas opções de assinatura** — mensal (R$49,90) e anual (R$298,80 = R$24,90/mês, ~50% de desconto) — que liberam acesso em mobile e web pela mesma conta, via RevenueCat (App Store, Google Play e RevenueCat Web Billing para o checkout web).
 - Tela de consentimento/aviso legal no primeiro uso (ferramenta de apoio à decisão clínica, não substitui julgamento clínico, uso por profissional habilitado).
 - Botão "Restaurar compra" nos apps mobile.
 - Novo ícone (ver seção Identidade Visual).
@@ -40,7 +42,7 @@ Público-alvo: profissionais de saúde individuais (compra pessoal, B2C) — nã
 - Licenciamento institucional/B2B (hospital compra para equipe).
 - Múltiplos idiomas.
 - Layout otimizado para tablet/iPad.
-- Free trial.
+- Qualquer proteção anti-abuso do trial além do contador local (ex: bloquear reinstalação, trial por servidor) — reinstalar resetando o trial é um risco aceito.
 - Qualquer lista de exceção/acesso vitalício para usuários atuais (decisão: todo mundo assina, sem exceção).
 - Sincronização/armazenamento de dados de paciente (não existe hoje e não entra agora — o formulário continua sem persistência).
 
@@ -61,7 +63,14 @@ Passos técnicos de geração de asset (implementação):
 
 - Novo projeto `app-mobile/` (separado do `app/` Electron atual), com `www/` baseado no HTML existente, reaproveitando a lógica de cálculo sem alterações.
 - `npx cap add ios android` para gerar os projetos nativos.
-- Plugins: `@revenuecat/purchases-capacitor` (assinatura), `@capacitor/preferences` (flag local de aceite do aviso legal), `@capacitor/splash-screen`, `@capacitor/status-bar`.
+- Plugins: `@revenuecat/purchases-capacitor` (assinatura), `@capacitor/preferences` (flag local de aceite do aviso legal + contador do trial), `@capacitor/splash-screen`, `@capacitor/status-bar`.
+
+### Trial gratuito (contador local)
+
+- Chave própria em `@capacitor/preferences` (ex.: `trialUsageCount`), incrementada em dois pontos: na primeira abertura do app (tela inicial já em branco = uso 1) e a cada clique em "Limpar/Nova" (usos 2 e 3).
+- Antes de abrir uma nova prescrição, o app checa `trialUsageCount`: se `< 3` e sem assinatura ativa, incrementa e abre normalmente; se `>= 3` e sem assinatura ativa, não abre — mostra o paywall.
+- Assinante ativo (checado via RevenueCat) ignora o contador — nunca é bloqueado.
+- Contador é só local, não sincroniza com conta nem servidor: é resetado se o app for desinstalado e reinstalado. Risco aceito (ver Fora do escopo).
 
 ### Autenticação e assinatura (mobile + web)
 
@@ -70,14 +79,20 @@ Passos técnicos de geração de asset (implementação):
 - Uma assinatura comprada em qualquer canal — App Store, Google Play ou **RevenueCat Web Billing** (checkout com cartão direto no navegador) — libera acesso em mobile e web pela mesma conta.
 - Não é necessário backend customizado: Supabase Auth e RevenueCat são serviços gerenciados; a página web usa os SDKs deles diretamente no navegador para checar login + assinatura antes de renderizar a calculadora.
 
-### Fluxo do app (mobile e web)
+### Fluxo do app (mobile)
 
 1. Splash/abertura.
 2. Primeiro uso: tela de aviso legal/consentimento (persistida localmente).
-3. Tela de login/criar conta (Supabase Auth).
-4. Checagem de assinatura via RevenueCat:
-   - Assinante ativo → abre a calculadora.
-   - Sem assinatura → paywall ("Assinar por R$ XX/ano" na loja correspondente ou via RevenueCat Web Billing na web) + botão "Restaurar compra" (mobile).
+3. Checagem de assinatura via RevenueCat:
+   - Assinante ativo (conta já criada e logada) → abre a calculadora direto, sem checar trial.
+   - Sem assinatura → checa o contador de trial local:
+     - `trialUsageCount < 3` → abre a calculadora normalmente, incrementa o contador.
+     - `trialUsageCount >= 3` → paywall: "Assinar por R$49,90/mês ou R$298,80/ano" + botão "Já tenho conta" (login) + botão "Restaurar compra".
+4. Ao escolher um plano no paywall: tela de criar conta (Supabase Auth, e-mail/senha) → checkout (App Store/Google Play) → conta logada e assinatura ativa liberam a calculadora.
+
+### Fluxo do app (web, Plano 3 — ainda não implementado)
+
+Mesma lógica de checagem de assinatura via RevenueCat (login obrigatório na web, sem trial de uso — o trial é só para primeiro contato via mobile). Login com a mesma conta usada no mobile reconhece a assinatura automaticamente.
 
 ### Dados e privacidade
 
@@ -88,10 +103,10 @@ Passos técnicos de geração de asset (implementação):
 
 - **Apple Developer Program**: inscrição pessoa física (CPF), US$99/ano.
 - **Google Play Console**: cadastro pessoa física (CPF), US$25 taxa única. Contas pessoais novas são obrigadas a rodar teste fechado com **mínimo 12 testers ativos por 14 dias corridos** antes de liberar produção — precisa ser planejado com antecedência (recrutar colegas como testers).
-- Produto de assinatura anual cadastrado em App Store Connect e Play Console — preço a definir pelo usuário durante a implementação.
+- Dois produtos de assinatura (mensal R$49,90 e anual R$298,80) cadastrados em App Store Connect e Play Console.
 - Política de Privacidade + Termos de Uso hospedados em página própria (GitHub Pages), linkados nas lojas e dentro do app.
 - Postura regulatória: calculadora permanece como ferramenta de apoio/referência para profissional já habilitado — **sem** registro como Software as a Medical Device (SaMD) na ANVISA/FDA.
-- Notas para o revisor da Apple: app 100% pago sem trial — incluir explicação do propósito clínico no App Review Information e, se solicitado, disponibilizar conta de teste com assinatura ativa para o revisor acessar além do paywall.
+- Notas para o revisor da Apple: o app tem trial de uso gratuito (3 prescrições) antes do paywall — o revisor consegue testar a calculadora normalmente sem precisar de conta. Se pedir para verificar o fluxo pós-assinatura, disponibilizar conta de teste com assinatura ativa.
 
 ## Migração da versão web (cutover)
 
@@ -104,8 +119,9 @@ A PWA atual já está em uso (inclusive pelo próprio usuário e possivelmente c
 ## Testes antes de publicar
 
 - **Lógica clínica**: comparar entradas/saídas do app empacotado (Capacitor) e da web com login contra a versão HTML original, campo a campo, para garantir que as fórmulas não mudaram ao adaptar o layout.
+- **Trial**: abrir o app 3 vezes (contando a tela inicial) sem assinar, confirmar que a 4ª tentativa de prescrição nova bloqueia e mostra o paywall; confirmar que assinante ativo nunca é bloqueado, independente do contador.
 - **Fluxo de conta**: criar conta, logar, deslogar, recuperar senha, logar em dois dispositivos diferentes (mobile + web) com a mesma conta e confirmar que a assinatura aparece em ambos.
-- **Assinatura**: compra em sandbox da Apple, license tester do Google, e checkout web do RevenueCat — incluindo cancelamento e renovação simulada.
+- **Assinatura**: compra em sandbox da Apple, license tester do Google, e checkout web do RevenueCat — testar mensal e anual, incluindo cancelamento e renovação simulada.
 - **Restaurar compra** após reinstalar o app.
 - Revisão isolada em simulador iOS e emulador Android antes de submeter às lojas.
 
@@ -114,7 +130,7 @@ A PWA atual já está em uso (inclusive pelo próprio usuário e possivelmente c
 | Tema | Decisão |
 |---|---|
 | Público-alvo | Profissional individual (B2C) |
-| Monetização | Assinatura anual |
+| Monetização | Trial gratuito de 3 prescrições (contador local, sem conta) → assinatura mensal (R$49,90) ou anual (R$298,80) |
 | Contas de desenvolvedor | Pessoa física (CPF), ainda não criadas |
 | Abordagem técnica mobile | Capacitor (reaproveita HTML/JS existente) |
 | Postura regulatória | Ferramenta de apoio/referência, sem registro SaMD |
