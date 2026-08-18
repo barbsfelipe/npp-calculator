@@ -1,0 +1,829 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+  <title>Calculadora de NPP — Prescrição</title>
+  <style>
+    :root{
+      --fg:#2c3338; --muted:#7a8389; --line:#e3e7ea;
+      --bg:#f4f6f8; --surface:#ffffff; --surface-soft:#f7f9fa;
+      --accent:#5b8c87; --accent-strong:#456b67; --accent-soft:#eaf2f1;
+      --danger:#b3261e; --danger-soft:#fbeceb;
+      --radius:12px; --gap:10px;
+      --font: ui-sans-serif, system-ui, -apple-system, "Segoe UI", Roboto, Helvetica, Arial, "Apple Color Emoji","Segoe UI Emoji";
+    }
+    html,body{height:100%;background:var(--bg);color:var(--fg);}
+    body{margin:0;font-family:var(--font); -webkit-font-smoothing:antialiased; padding:env(safe-area-inset-top) env(safe-area-inset-right) env(safe-area-inset-bottom) env(safe-area-inset-left);}
+
+    .sheet{width:min(900px, 100%); margin:28px auto; background:var(--surface); border:1px solid var(--line); border-radius:16px; padding:32px 36px 28px; box-shadow:0 1px 2px rgba(20,30,30,.04);}
+    @media (max-width:760px){.sheet{margin:0; border:none; border-radius:0; padding:18px;}}
+
+    header h1{font-size:19px; margin:0 0 4px 0; font-weight:600; letter-spacing:-.01em;}
+    .sub{color:var(--muted); font-size:12px;}
+
+    .grid{display:grid; grid-template-columns:repeat(12, minmax(0, 1fr)); gap:var(--gap);}
+    .field{display:flex; flex-direction:column; gap:6px;}
+    label{font-size:11px; letter-spacing:.02em; color:var(--muted); font-weight:500;}
+    input, select{
+      border:1px solid var(--line); border-radius:9px; padding:9px 12px; font-size:14px;
+      background:var(--surface); color:var(--fg); transition:border-color .15s, box-shadow .15s;
+    }
+    input::placeholder{color:#b7bec3}
+    input:focus, select:focus{outline:none; border-color:var(--accent); box-shadow:0 0 0 3px var(--accent-soft);}
+    input[readonly]{background:var(--accent-soft); border:1px solid #d3e6e3; color:var(--accent-strong); font-weight:600;}
+    input[readonly]:focus{box-shadow:none;}
+    .row{margin-top:14px}
+
+    .span-12{grid-column:span 12}
+    .span-9{grid-column:span 9}
+    .span-8{grid-column:span 8}
+    .span-6{grid-column:span 6}
+    .span-4{grid-column:span 4}
+    .span-3{grid-column:span 3}
+    .span-2{grid-column:span 2}
+
+    .unit-wrap{position:relative}
+    .unit-wrap input{padding-right:58px}
+    .unit{position:absolute; right:10px; top:50%; transform:translateY(-50%); color:var(--muted); font-size:12px}
+
+    hr{border:none; border-top:1px solid var(--line); margin:18px 0}
+    .bar{height:3px; background:linear-gradient(90deg, var(--accent), #9fc3c0); border-radius:999px; margin:10px 0 18px; opacity:.8}
+
+    .meta{display:flex; gap:12px; align-items:center; justify-content:space-between; flex-wrap:wrap}
+    .meta small{color:var(--muted)}
+
+    .notice{font-size:12px; color:var(--muted)}
+    .notice b{color:var(--fg)}
+
+    .section-title{font-size:13px; font-weight:600; margin:26px 0 10px; color:var(--fg); display:flex; align-items:center; gap:8px;}
+    .section-title::before{content:""; width:6px; height:6px; border-radius:50%; background:var(--accent); display:inline-block;}
+
+    .actions{margin-top:16px; display:flex; gap:10px; flex-wrap:wrap}
+    button{
+      border:1px solid transparent; background:var(--accent); color:#fff; padding:9px 16px; border-radius:9px;
+      font-size:13.5px; font-weight:500; cursor:pointer; transition:background .15s, transform .05s;
+    }
+    button:hover{background:var(--accent-strong);}
+    button:active{transform:translateY(1px);}
+    button.secondary{background:var(--surface); color:var(--fg); border:1px solid var(--line);}
+    button.secondary:hover{background:var(--surface-soft); border-color:#cfd6da;}
+
+    .output-negative{color:var(--danger); font-weight:600}
+
+    .aviso-peso{font-size:12px; font-weight:600; padding:8px 10px; border-radius:8px;}
+    .aviso-peso-alerta{color:#8a5a00; background:#fdf3de;}
+    .aviso-peso-bloqueio{color:var(--danger); background:var(--danger-soft);}
+
+    #sec-macro .span-3 { grid-column: span 6; }
+    @media (max-width:640px){ #sec-macro .span-3 { grid-column: span 12; } }
+    #sec-micro .span-3 { grid-column: span 6; }
+    @media (max-width:640px){ #sec-micro .span-3 { grid-column: span 12; } }
+    #sec-trace .span-3 { grid-column: span 6; }
+    @media (max-width:640px){ #sec-trace .span-3 { grid-column: span 12; } }
+    #sec-totais .span-3 { grid-column: span 4; }
+    @media (max-width:640px){ #sec-totais .span-3 { grid-column: span 12; } }
+    #sec-info .span-3 { grid-column: span 3; }
+    @media (max-width:640px){ #sec-info .span-3 { grid-column: span 12; } }
+
+    #sec-info{grid-auto-flow:dense}
+
+    #end-actions{display:flex; justify-content:flex-end; gap:10px; margin-top:26px; padding-top:18px; border-top:1px solid var(--line);}
+
+    /* ===== Resumo de Prescrição ===== */
+    #overlayResumo, #overlayDisclaimer{
+      position: fixed; inset: 0; background: rgba(30,40,40,.32);
+      display:none; align-items: center; justify-content: center; padding: 24px;
+      z-index: 9999;
+    }
+    #resumoCard, #disclaimerCard{
+      width: 210mm; max-width: 100%; background: #fff; border-radius: 14px; box-shadow:0 20px 60px rgba(20,30,30,.25);
+      padding: 18mm; max-height: 90vh; overflow: auto;
+    }
+    #disclaimerCard{width:120mm}
+    #resumoCard h2, #disclaimerCard h2{margin:0 0 8px 0; font-size:18px; color:var(--fg);}
+    #resumoCard .muted{color:var(--muted); font-size:12px; margin-bottom:12px}
+    .resumo-sec{margin-top:14px}
+    .resumo-sec h3{font-size:13px; margin:8px 0; color:var(--fg);}
+    .kv{display:grid; grid-template-columns: 1fr 1fr; column-gap:16px; row-gap:6px; font-size:13px}
+    .kv div{display:flex; justify-content:space-between; gap:10px; border-bottom:1px dashed var(--line); padding:4px 0}
+    .kv div b{white-space:nowrap}
+    .chips{display:flex; flex-wrap:wrap; gap:6px}
+    .chip{background:var(--accent-soft); border:1px solid #d3e6e3; padding:6px 10px; border-radius:999px; font-size:12px; color:var(--accent-strong);}
+
+    .resumo-actions{display:flex; justify-content:flex-end; gap:10px; margin-top:16px}
+
+    /* Print: mostrar apenas o conteúdo do resumo */
+    @media print{
+      @page{ size:A4; margin:10mm; }
+      #editor{display:none !important;}
+      body *{visibility: hidden !important;}
+      #overlayResumo, #resumoCard, #resumoCard *{visibility: visible !important;}
+      #overlayResumo{position: static; background: none; padding: 0; margin: 0;}
+      #resumoCard{box-shadow:none; width:auto; padding:0; max-height:none; overflow:visible;}
+      .resumo-sec, .kv div{page-break-inside: avoid;}
+      .resumo-actions{display:none}
+    }
+  </style>
+</head>
+<body>
+  <div class="sheet" role="document" aria-label="Prescrição de NPP" id="editor">
+    <header>
+      <h1>Prescrição de Nutrição Parenteral (NPP)</h1>
+      <div class="sub">Layout de prescrição hospitalar — versão 0.5.8</div>
+      <div class="bar" aria-hidden="true"></div>
+
+      <!-- Cabeçalho -->
+      <div class="grid row" id="cabecalho">
+        <div class="field span-12">
+          <label for="hospital">Hospital</label>
+          <input id="hospital" name="hospital" type="text" placeholder="Nome do hospital" autocomplete="organization" />
+        </div>
+        <div class="field span-12">
+          <label for="nome">Nome completo</label>
+          <input id="nome" name="nome" type="text" placeholder="Nome do paciente" autocomplete="name" />
+        </div>
+        <div class="field span-3">
+          <label for="idade">Idade (dias/meses/anos)</label>
+          <input id="idade" name="idade" type="text" placeholder="Ex.: 15 dias / 3 m / 2 a" inputmode="numeric" />
+        </div>
+        <div class="field span-3 unit-wrap">
+          <label for="peso">Peso</label>
+          <input id="peso" name="peso" type="text" placeholder="0,00" inputmode="decimal" />
+          <span class="unit" aria-hidden="true">kg</span>
+        </div>
+        <div class="field span-3 unit-wrap">
+          <label for="pesoCalorico">Peso calórico (auto)</label>
+          <input id="pesoCalorico" name="pesoCalorico" type="text" placeholder="—" readonly />
+          <span class="unit" aria-hidden="true">kcal</span>
+        </div>
+        <div id="avisoPeso" class="field span-12" style="display:none"></div>
+        <div class="field span-3">
+          <label for="setor">Setor</label>
+          <input id="setor" name="setor" type="text" placeholder="Ex.: UTI Pediátrica" />
+        </div>
+        <div class="field span-3">
+          <label for="leito">Nº do leito</label>
+          <input id="leito" name="leito" type="text" placeholder="—" />
+        </div>
+        <div class="field span-3">
+          <label for="registro">Registro</label>
+          <input id="registro" name="registro" type="text" placeholder="Prontuário / ID" />
+        </div>
+      </div>
+
+      <div class="meta">
+        <small>Use vírgula ou ponto — a calculadora entende ambos.</small>
+        <div class="actions">
+          <button type="button" class="secondary" id="btnLimpar">Limpar</button>
+        </div>
+      </div>
+
+      <hr />
+    </header>
+
+    <!-- Oferta hídrica & Macronutrientes -->
+    <section aria-label="Oferta hídrica e macronutrientes">
+      <div class="section-title">Oferta hídrica & Macronutrientes</div>
+      <div class="grid row" id="sec-macro">
+        <div class="field span-3 unit-wrap">
+          <label for="doseH2O">Oferta hídrica (dose)</label>
+          <input id="doseH2O" type="text" placeholder="0,0" inputmode="decimal" />
+          <span class="unit" aria-hidden="true">ml/kg/dia</span>
+        </div>
+        <div class="field span-3 unit-wrap">
+          <label for="volH2O">Volume hídrico (auto)</label>
+          <input id="volH2O" type="text" placeholder="—" readonly />
+          <span class="unit" aria-hidden="true">ml</span>
+        </div>
+        <div class="field span-3 unit-wrap">
+          <label for="doseAA">Aminoácidos 10% (dose)</label>
+          <input id="doseAA" type="text" placeholder="0,0" inputmode="decimal" />
+          <span class="unit" aria-hidden="true">g/kg/dia</span>
+        </div>
+        <div class="field span-3 unit-wrap">
+          <label for="volAA">Aminoácidos 10% (auto)</label>
+          <input id="volAA" type="text" placeholder="—" readonly />
+          <span class="unit" aria-hidden="true">ml</span>
+        </div>
+        <div class="field span-3 unit-wrap">
+          <label for="doseLIP">Lipídeos 20% (dose)</label>
+          <input id="doseLIP" type="text" placeholder="0,00" inputmode="decimal" />
+          <span class="unit" aria-hidden="true">g/kg/dia</span>
+        </div>
+        <div class="field span-3 unit-wrap">
+          <label for="volLIP">Lipídeos 20% (auto)</label>
+          <input id="volLIP" type="text" placeholder="—" readonly />
+          <span class="unit" aria-hidden="true">ml</span>
+        </div>
+        <div class="field span-3 unit-wrap">
+          <label for="doseG50">Glicose 50% (dose)</label>
+          <input id="doseG50" type="text" placeholder="0,00" inputmode="decimal" />
+          <span class="unit" aria-hidden="true">mg/kg/min</span>
+        </div>
+        <div class="field span-3 unit-wrap">
+          <label for="volG50">Glicose 50% (auto)</label>
+          <input id="volG50" type="text" placeholder="—" readonly />
+          <span class="unit" aria-hidden="true">ml</span>
+        </div>
+      </div>
+    </section>
+
+    <!-- Micronutrientes — Eletrólitos -->
+    <section aria-label="Micronutrientes — Eletrólitos">
+      <div class="section-title">Micronutrientes — Eletrólitos</div>
+      <div class="grid row" id="sec-micro">
+        <div class="field span-12">
+          <label for="srcNaClSelect">Cloreto de sódio — apresentação</label>
+          <select id="srcNaClSelect">
+            <option value="10" selected>NaCl 10% (1,7 mEq/mL)</option>
+            <option value="20">NaCl 20% (3,4 mEq/mL)</option>
+          </select>
+        </div>
+        <div class="field span-3 unit-wrap">
+          <label for="doseNaCl10">Cloreto de sódio (dose)</label>
+          <input id="doseNaCl10" type="text" placeholder="0,0" inputmode="decimal" />
+          <span class="unit" aria-hidden="true">mEq/kg/dia</span>
+        </div>
+        <div class="field span-3 unit-wrap">
+          <label for="volNaCl10">Cloreto de sódio (auto)</label>
+          <input id="volNaCl10" type="text" placeholder="—" readonly />
+          <span class="unit" aria-hidden="true">ml</span>
+        </div>
+        <div class="field span-12">
+          <label for="srcKClSelect">Cloreto de potássio — apresentação</label>
+          <select id="srcKClSelect">
+            <option value="10" selected>KCl 10% (1,34 mEq/mL)</option>
+            <option value="191">KCl 19,1% (2,56 mEq/mL)</option>
+          </select>
+        </div>
+        <div class="field span-3 unit-wrap">
+          <label for="doseKCl10">Cloreto de potássio (dose)</label>
+          <input id="doseKCl10" type="text" placeholder="0,0" inputmode="decimal" />
+          <span class="unit" aria-hidden="true">mEq/kg/dia</span>
+        </div>
+        <div class="field span-3 unit-wrap">
+          <label for="volKCl10">Cloreto de potássio (auto)</label>
+          <input id="volKCl10" type="text" placeholder="—" readonly />
+          <span class="unit" aria-hidden="true">ml</span>
+        </div>
+        <div class="field span-3 unit-wrap">
+          <label for="doseMg10">Sulfato de magnésio 10% (dose)</label>
+          <input id="doseMg10" type="text" placeholder="0,0" inputmode="decimal" />
+          <span class="unit" aria-hidden="true">mEq/kg/dia</span>
+        </div>
+        <div class="field span-3 unit-wrap">
+          <label for="volMg10">Sulfato de magnésio 10% (auto)</label>
+          <input id="volMg10" type="text" placeholder="—" readonly />
+          <span class="unit" aria-hidden="true">ml</span>
+        </div>
+        <div class="field span-3 unit-wrap">
+          <label for="doseCaGlu10">Gluconato de cálcio 10% (dose)</label>
+          <input id="doseCaGlu10" type="text" placeholder="0,0" inputmode="decimal" />
+          <span class="unit" aria-hidden="true">mEq/kg/dia</span>
+        </div>
+        <div class="field span-3 unit-wrap">
+          <label for="volCaGlu10">Gluconato de cálcio 10% (auto)</label>
+          <input id="volCaGlu10" type="text" placeholder="—" readonly />
+          <span class="unit" aria-hidden="true">ml</span>
+        </div>
+        <div class="field span-3">
+          <label for="srcPSelect">Fósforo — fonte</label>
+          <select id="srcPSelect">
+            <option value="">Selecione…</option>
+            <option value="gly">Glicerofosfato de sódio</option>
+            <option value="kphos">Fosfato de K (2 mEq/mL)</option>
+          </select>
+          <small class="notice">Ambos contêm ≈ <b>31 mg de P/mL</b>.</small>
+        </div>
+        <div class="field span-3 unit-wrap" id="wrapDoseP" style="display:none">
+          <label for="dosePmgkg">Fósforo — dose</label>
+          <input id="dosePmgkg" type="text" placeholder="0" inputmode="numeric" />
+          <span class="unit" aria-hidden="true">mg/kg/dia</span>
+        </div>
+        <div class="field span-3 unit-wrap" id="wrapVolP" style="display:none">
+          <label for="volP">Fósforo — volume (auto)</label>
+          <input id="volP" type="text" placeholder="—" readonly />
+          <span class="unit" aria-hidden="true">ml</span>
+        </div>
+      </div>
+    </section>
+
+    <!-- Micronutrientes — Traços & Vitaminas -->
+    <section aria-label="Micronutrientes — Traços e Vitaminas">
+      <div class="section-title">Micronutrientes — Traços & Vitaminas</div>
+      <div class="grid row" id="sec-trace">
+        <div class="field span-3 unit-wrap">
+          <label for="doseSe">Selênio (dose)</label>
+          <input id="doseSe" type="text" placeholder="0,0" inputmode="decimal" />
+          <span class="unit" aria-hidden="true">mcg/kg/dia</span>
+        </div>
+        <div class="field span-3 unit-wrap">
+          <label for="volSe">Selênio (auto)</label>
+          <input id="volSe" type="text" placeholder="—" readonly />
+          <span class="unit" aria-hidden="true">ml</span>
+        </div>
+        <div class="field span-3 unit-wrap">
+          <label for="doseZn">Zinco (dose)</label>
+          <input id="doseZn" type="text" placeholder="0,00" inputmode="decimal" />
+          <span class="unit" aria-hidden="true">mcg/kg/dia</span>
+        </div>
+        <div class="field span-3 unit-wrap">
+          <label for="volZn">Zinco (auto)</label>
+          <input id="volZn" type="text" placeholder="—" readonly />
+          <span class="unit" aria-hidden="true">ml</span>
+        </div>
+        <div class="field span-3 unit-wrap">
+          <label for="doseTE">Oligoelementos — dose</label>
+          <input id="doseTE" type="text" placeholder="0,00" inputmode="decimal" />
+          <span class="unit" aria-hidden="true">ml/kg/dia</span>
+        </div>
+        <div class="field span-3 unit-wrap">
+          <label for="volTE">Oligoelementos — volume (auto)</label>
+          <input id="volTE" type="text" placeholder="—" readonly />
+          <span class="unit" aria-hidden="true">ml</span>
+        </div>
+        <div class="field span-12 unit-wrap">
+          <label for="volMVI">Polivitamínicos — TrezevitAB (auto)</label>
+          <input id="volMVI" type="text" placeholder="2 mL/kg, máx 10 mL" readonly />
+          <span class="unit" aria-hidden="true">ml</span>
+        </div>
+        <div class="field span-3 unit-wrap">
+          <label for="doseGln">Glutamina (dose)</label>
+          <input id="doseGln" type="text" placeholder="0,00" inputmode="decimal" />
+          <span class="unit" aria-hidden="true">g/kg/dia</span>
+        </div>
+        <div class="field span-3 unit-wrap">
+          <label for="volGln">Glutamina (auto)</label>
+          <input id="volGln" type="text" placeholder="—" readonly />
+          <span class="unit" aria-hidden="true">ml</span>
+        </div>
+      </div>
+    </section>
+
+    <!-- Totais & Água destilada -->
+    <section aria-label="Totais & Água destilada">
+      <div class="section-title">Totais & Água destilada</div>
+      <div class="grid row" id="sec-totais">
+        <div class="field span-3 unit-wrap">
+          <label for="volTotal">Volume total da solução (auto)</label>
+          <input id="volTotal" type="text" placeholder="—" readonly />
+          <span class="unit" aria-hidden="true">ml</span>
+        </div>
+        <div class="field span-3 unit-wrap">
+          <label for="somaComponentes">Soma dos componentes (auto)</label>
+          <input id="somaComponentes" type="text" placeholder="—" readonly />
+          <span class="unit" aria-hidden="true">ml</span>
+        </div>
+        <div class="field span-3 unit-wrap">
+          <label for="aguaDestilada">Água destilada (auto)</label>
+          <input id="aguaDestilada" type="text" placeholder="—" readonly />
+          <span class="unit" aria-hidden="true">ml</span>
+        </div>
+      </div>
+      <p class="notice"><b>Volume total</b> é igual ao <b>Volume hídrico</b>. A água destilada = Volume total − Soma dos componentes. (A oferta hídrica não entra na soma.)</p>
+    </section>
+
+    <!-- Informativo -->
+    <section aria-label="Informativo da Solução">
+      <div class="section-title">Informativo da Solução</div>
+      <div class="grid row" id="sec-info">
+        <div class="field span-3 unit-wrap">
+          <label for="kcalTotais">Calorias totais (auto)</label>
+          <input id="kcalTotais" type="text" placeholder="—" readonly />
+          <span class="unit" aria-hidden="true">kcal/dia</span>
+        </div>
+        <div class="field span-3 unit-wrap">
+          <label for="aporteKcalKg">Aporte calórico (auto)</label>
+          <input id="aporteKcalKg" type="text" placeholder="—" readonly />
+          <span class="unit" aria-hidden="true">kcal/kg/dia</span>
+        </div>
+        <div class="field span-3 unit-wrap">
+          <label for="catDiva">Cátions bivalentes (auto)</label>
+          <input id="catDiva" type="text" placeholder="—" readonly />
+          <span class="unit" aria-hidden="true">mEq/L</span>
+        </div>
+        <div class="field span-3 unit-wrap">
+          <label for="osmolaridade">Osmolaridade estimada (auto)</label>
+          <input id="osmolaridade" type="text" placeholder="—" readonly />
+          <span class="unit" aria-hidden="true">mOsm/L</span>
+        </div>
+        <div class="field span-3 unit-wrap">
+          <label for="kTotal">Potássio total (auto)</label>
+          <input id="kTotal" type="text" placeholder="—" readonly />
+          <span class="unit" aria-hidden="true">mEq/kg</span>
+        </div>
+        <div class="field span-3 unit-wrap">
+          <label for="naTotal">Sódio total (auto)</label>
+          <input id="naTotal" type="text" placeholder="—" readonly />
+          <span class="unit" aria-hidden="true">mEq/kg</span>
+        </div>
+        <div class="field span-3 unit-wrap">
+          <label for="concSolucao">Concentração da solução (auto)</label>
+          <input id="concSolucao" type="text" placeholder="—" readonly />
+          <span class="unit" aria-hidden="true">%</span>
+        </div>
+        <div class="field span-3 unit-wrap">
+          <label for="relCaP">Relação Cálcio:Fósforo (auto)</label>
+          <input id="relCaP" type="text" placeholder="—" readonly />
+          <span class="unit" aria-hidden="true">razão</span>
+        </div>
+        <div class="field span-3 unit-wrap">
+          <label for="relGNKcalNP">Relação gN / Kcal não proteica (auto)</label>
+          <input id="relGNKcalNP" type="text" placeholder="—" readonly />
+          <span class="unit" aria-hidden="true">1 : X</span>
+        </div>
+      </div>
+    </section>
+
+    <!-- Botão final -->
+    <div id="end-actions" class="actions">
+      <button type="button" id="btnResumo">Resumo / Imprimir</button>
+    </div>
+  </div>
+
+  <!-- Overlay Resumo -->
+  <div id="overlayResumo" role="dialog" aria-modal="true" aria-labelledby="resumoTitulo">
+    <div id="resumoCard">
+      <h2 id="resumoTitulo">Prescrição — Resumo</h2>
+      <div class="muted">Gerado automaticamente a partir da calculadora</div>
+
+      <div class="resumo-sec" id="resumoHeader">
+
+        <div class="kv" id="kvHeader"></div>
+      </div>
+
+      <div class="resumo-sec" id="resumoComponentes">
+        <h3>Componentes (mL)</h3>
+        <div class="kv" id="kvComponentes"></div>
+        <div class="chips" id="chipsTotais"></div>
+      </div>
+
+      <div class="resumo-sec" id="resumoInformativo">
+        <h3>Informativo resumido</h3>
+        <div class="kv" id="kvInfo"></div>
+      </div>
+
+      <div class="resumo-actions">
+        <button type="button" class="secondary" id="btnVoltar">Voltar à edição</button>
+        <button type="button" id="btnImprimir">Imprimir</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Overlay Aviso de responsabilidade -->
+  <div id="overlayDisclaimer" role="dialog" aria-modal="true" aria-labelledby="disclaimerTitulo">
+    <div id="disclaimerCard">
+      <h2 id="disclaimerTitulo">Aviso importante</h2>
+      <p>Esta calculadora é uma ferramenta de apoio ao cálculo de Nutrição Parenteral e <b>não substitui o raciocínio clínico</b>. A responsabilidade pela prescrição, pelas doses e pela conduta terapêutica é exclusivamente do médico prescritor.</p>
+      <div class="resumo-actions">
+        <button type="button" id="btnFecharDisclaimer">Entendi</button>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    // ===== Utilidades =====
+    function parseNumberBR(v){
+      if(v === undefined || v === null) return NaN;
+      const s = String(v).trim();
+      if(!s) return NaN;
+      const hasComma = s.includes(',');
+      const hasDot = s.includes('.');
+      if(hasComma && hasDot){
+        if(s.lastIndexOf(',') > s.lastIndexOf('.')){
+          return Number(s.replace(/\./g, '').replace(',', '.'));
+        }else{
+          return Number(s.replace(/,/g, ''));
+        }
+      }else if(hasComma){
+        return Number(s.replace(',', '.'));
+      }else{
+        return Number(s);
+      }
+    }
+    function formatNumberBR(n, frac=2){ if(!Number.isFinite(n)) return ''; return n.toLocaleString('pt-BR', {minimumFractionDigits:frac, maximumFractionDigits:frac}); }
+    function formatML(n){ return formatNumberBR(n, 1); }
+    function nonEmpty(x){ return x !== undefined && x !== null && String(x).trim() !== ''; }
+    function nonEmptyVal(v){ return v !== undefined && v !== null && String(v).trim() !== '' && String(v).trim() !== '0'; }
+    const f0 = (n)=>formatNumberBR(n,0);
+    const f1 = (n)=>formatNumberBR(n,1);
+    const f2 = (n)=>formatNumberBR(n,2);
+
+    // ===== Referências de campos =====
+    const pesoEl = document.getElementById('peso');
+    const pesoCaloricoEl = document.getElementById('pesoCalorico');
+    const btnLimpar = document.getElementById('btnLimpar');
+
+    // Macros
+    const doseH2O = document.getElementById('doseH2O'), volH2O = document.getElementById('volH2O');
+    const doseAA = document.getElementById('doseAA'), volAA = document.getElementById('volAA');
+    const doseLIP = document.getElementById('doseLIP'), volLIP = document.getElementById('volLIP');
+    const doseG50 = document.getElementById('doseG50'), volG50 = document.getElementById('volG50');
+
+    // Micros
+    const srcNaClSelect = document.getElementById('srcNaClSelect');
+    const doseNaCl10 = document.getElementById('doseNaCl10'), volNaCl10 = document.getElementById('volNaCl10');
+    const srcKClSelect = document.getElementById('srcKClSelect');
+    const doseKCl10 = document.getElementById('doseKCl10'), volKCl10 = document.getElementById('volKCl10');
+    const doseMg10 = document.getElementById('doseMg10'), volMg10 = document.getElementById('volMg10');
+    const doseCaGlu10 = document.getElementById('doseCaGlu10'), volCaGlu10 = document.getElementById('volCaGlu10');
+
+    // Fósforo
+    const srcPSelect = document.getElementById('srcPSelect');
+    const dosePmgkg = document.getElementById('dosePmgkg');
+    const wrapDoseP = document.getElementById('wrapDoseP');
+    const wrapVolP = document.getElementById('wrapVolP');
+    const volP = document.getElementById('volP');
+
+    // Traços/Vit
+    const doseSe = document.getElementById('doseSe'), volSe = document.getElementById('volSe');
+    const doseZn = document.getElementById('doseZn'), volZn = document.getElementById('volZn');
+    const doseTE = document.getElementById('doseTE'), volTE = document.getElementById('volTE');
+    const volMVI = document.getElementById('volMVI');
+    const doseGln = document.getElementById('doseGln'), volGln = document.getElementById('volGln');
+
+    // Totais
+    const volTotal = document.getElementById('volTotal');
+    const somaComponentes = document.getElementById('somaComponentes');
+    const aguaDestilada = document.getElementById('aguaDestilada');
+
+    // Informativo (outputs)
+    const kcalTotais = document.getElementById('kcalTotais');
+    const aporteKcalKg = document.getElementById('aporteKcalKg');
+    const catDiva = document.getElementById('catDiva');
+    const osmolaridade = document.getElementById('osmolaridade');
+    const kTotal = document.getElementById('kTotal');
+    const naTotal = document.getElementById('naTotal');
+    const concSolucao = document.getElementById('concSolucao');
+    const relCaP = document.getElementById('relCaP');
+    const relGNKcalNP = document.getElementById('relGNKcalNP');
+
+    // Cabeçalho simples
+    const hospital = document.getElementById('hospital');
+    const nome = document.getElementById('nome');
+    const idade = document.getElementById('idade');
+    const setor = document.getElementById('setor');
+    const leito = document.getElementById('leito');
+    const registro = document.getElementById('registro');
+    const avisoPeso = document.getElementById('avisoPeso');
+
+    // ===== Peso calórico =====
+    function calcularPesoCalorico(p){
+      if(!Number.isFinite(p) || p<=0) return NaN;
+      if(p<=10) return p;
+      if(p<=20) return 10 + 0.5*(p-10);
+      return 15 + 0.2*(p-20);
+    }
+    function atualizarPesoCalorico(){
+      const p = parseNumberBR(pesoEl.value);
+      const pc = calcularPesoCalorico(p);
+      pesoCaloricoEl.value = Number.isFinite(pc) ? formatNumberBR(pc) : '';
+    }
+
+    // ===== Cálculos =====
+    const FACT_NACL10=1.7, FACT_NACL20=3.4, FACT_KCL10=1.34, FACT_KCL191=2.56, FACT_MG10=0.8, FACT_CAGLU10=0.5, FACT_MVI=2, FACT_ZN=230, FACT_SE=60, FACT_GLN=0.2, MG_PER_ML_P=31;
+    const MEQ_PER_ML_NA_GLY = 2, MEQ_PER_ML_K_PHOS = 2;
+    const LIMIAR_AVISO_PESO = 30, LIMIAR_BLOQUEIO_PESO = 40;
+    const doseFieldIds = ['doseH2O','doseAA','doseLIP','doseG50','doseNaCl10','doseKCl10','doseMg10','doseCaGlu10','dosePmgkg','doseSe','doseZn','doseTE','doseGln'];
+    const selectFieldIds = ['srcPSelect','srcNaClSelect','srcKClSelect'];
+
+    function safe(n){ return Number.isFinite(n) ? n : 0; }
+
+    function updateAvisoPeso(P){
+      const bloqueado = Number.isFinite(P) && P >= LIMIAR_BLOQUEIO_PESO;
+      const emAviso = Number.isFinite(P) && P >= LIMIAR_AVISO_PESO && P < LIMIAR_BLOQUEIO_PESO;
+      [...doseFieldIds, ...selectFieldIds].forEach(id => {
+        document.getElementById(id).disabled = bloqueado;
+      });
+      avisoPeso.style.display = (bloqueado || emAviso) ? '' : 'none';
+      avisoPeso.className = 'field span-12 aviso-peso' + (bloqueado ? ' aviso-peso-bloqueio' : (emAviso ? ' aviso-peso-alerta' : ''));
+      avisoPeso.textContent = bloqueado
+        ? 'Peso ≥ 40 kg: NPP individualizada não é recomendada. Utilize soluções padronizadas industrializadas (ex.: Olimel, Kabiven). Os campos de dose foram bloqueados.'
+        : (emAviso ? 'Peso ≥ 30 kg: considere o uso de soluções padronizadas industrializadas (ex.: Olimel, Kabiven) em vez de NPP individualizada.' : '');
+    }
+
+    function updatePUI(){
+      const chosen = srcPSelect.value !== '';
+      wrapDoseP.style.display = chosen ? '' : 'none';
+      wrapVolP.style.display = chosen ? '' : 'none';
+      if(!chosen){
+        dosePmgkg.value = '';
+        volP.value = '';
+      }
+    }
+
+    function calcVolumes(){
+      const P = parseNumberBR(pesoEl.value);
+      updateAvisoPeso(P);
+      if(!Number.isFinite(P) || P <= 0){
+        [volH2O, volAA, volLIP, volG50, volNaCl10, volKCl10, volMg10, volCaGlu10, volP, volSe, volZn, volTE, volMVI, volGln, somaComponentes, aguaDestilada, volTotal,
+         kcalTotais, aporteKcalKg, catDiva, osmolaridade, kTotal, naTotal, concSolucao, relCaP, relGNKcalNP
+        ].forEach(el => el.value = '');
+        return;
+      }
+      const PC = calcularPesoCalorico(P);
+
+      // Oferta hídrica e volume total (auto = igual ao hídrico)
+      const dH2O=parseNumberBR(doseH2O.value);
+      const H2O=(Number.isFinite(dH2O)&&Number.isFinite(PC))?dH2O*PC:NaN;
+      volH2O.value=Number.isFinite(H2O)?formatML(H2O):'';
+      volTotal.value=Number.isFinite(H2O)?formatML(H2O):''; // espelha
+      const Vtotal_mL = Number.isFinite(H2O) ? H2O : NaN;
+      const V_L = Number.isFinite(Vtotal_mL) ? (Vtotal_mL/1000) : NaN;
+
+      // Macronutrientes
+      const dAA=parseNumberBR(doseAA.value); const AA=Number.isFinite(dAA)?dAA*P*10:NaN; volAA.value=Number.isFinite(AA)?formatML(AA):'';
+      const dLIP=parseNumberBR(doseLIP.value); const LIP=Number.isFinite(dLIP)?dLIP*P*5:NaN; volLIP.value=Number.isFinite(LIP)?formatML(LIP):'';
+      const dG50=parseNumberBR(doseG50.value); const G50=Number.isFinite(dG50)?dG50*P*1.44*2:NaN; volG50.value=Number.isFinite(G50)?formatML(G50):'';
+
+      // Eletrólitos (mL)
+      const naFactor = srcNaClSelect.value === '20' ? FACT_NACL20 : FACT_NACL10;
+      const dNa=parseNumberBR(doseNaCl10.value); const NaVol=(Number.isFinite(dNa)&&Number.isFinite(PC))?(PC*dNa)/naFactor:NaN; volNaCl10.value=Number.isFinite(NaVol)?formatML(NaVol):'';
+      const kFactor = srcKClSelect.value === '191' ? FACT_KCL191 : FACT_KCL10;
+      const dK=parseNumberBR(doseKCl10.value); const KVol=(Number.isFinite(dK)&&Number.isFinite(PC))?(PC*dK)/kFactor:NaN; volKCl10.value=Number.isFinite(KVol)?formatML(KVol):'';
+      const dMg=parseNumberBR(doseMg10.value); const MgVol=Number.isFinite(dMg)?(P*dMg)/FACT_MG10:NaN; volMg10.value=Number.isFinite(MgVol)?formatML(MgVol):'';
+      const dCa=parseNumberBR(doseCaGlu10.value); const CaVol=Number.isFinite(dCa)?(P*dCa)/FACT_CAGLU10:NaN; volCaGlu10.value=Number.isFinite(CaVol)?formatML(CaVol):'';
+
+      // Fósforo
+      let PVol=NaN, mgP=NaN;
+      if(srcPSelect.value){
+        const dPmg=parseNumberBR(dosePmgkg.value);
+        const mgTotalP=Number.isFinite(dPmg)?dPmg*P:NaN;
+        PVol=Number.isFinite(mgTotalP)?(mgTotalP/MG_PER_ML_P):NaN;
+        mgP = Number.isFinite(PVol) ? (PVol*MG_PER_ML_P) : NaN;
+      }
+      volP.value=Number.isFinite(PVol)?formatML(PVol):'';
+
+      // Traços/Vit
+      const dSe=parseNumberBR(doseSe.value); const SeVol=Number.isFinite(dSe)?(dSe*P)/FACT_SE:NaN; volSe.value=Number.isFinite(SeVol)?formatML(SeVol):'';
+      const dZn=parseNumberBR(doseZn.value); const ZnVol=Number.isFinite(dZn)?(dZn*P)/FACT_ZN:NaN; volZn.value=Number.isFinite(ZnVol)?formatML(ZnVol):'';
+      const dTE=parseNumberBR(doseTE.value); const TEVol=Number.isFinite(dTE)?dTE*P:NaN; volTE.value=Number.isFinite(TEVol)?formatML(TEVol):'';
+      const MVIVol=Math.min(P*FACT_MVI,10); volMVI.value=formatML(MVIVol);
+      const dGln=parseNumberBR(doseGln.value); const GlnVol=Number.isFinite(dGln)?(dGln*P)/FACT_GLN:NaN; volGln.value=Number.isFinite(GlnVol)?formatML(GlnVol):'';
+
+      // Soma e água destilada
+      const soma = (AA||0)+(LIP||0)+(G50||0)+(NaVol||0)+(KVol||0)+(MgVol||0)+(CaVol||0)+(PVol||0)+(SeVol||0)+(ZnVol||0)+(TEVol||0)+(MVIVol||0)+(GlnVol||0);
+      somaComponentes.value = formatML(soma);
+      const agua = Number.isFinite(Vtotal_mL) ? (Vtotal_mL - soma) : NaN;
+      aguaDestilada.value = Number.isFinite(agua) ? formatML(agua) : '';
+      aguaDestilada.classList.toggle('output-negative', Number.isFinite(agua) && agua < 0);
+
+      // ===== Informativo =====
+      // Gramas de macros
+      const gAA = Number.isFinite(dAA) ? dAA*P : 0;
+      const gLIP = Number.isFinite(dLIP) ? dLIP*P : 0;
+      const gGLU = Number.isFinite(dG50) ? dG50*P*1.44 : 0;
+
+      // Kcal
+      const kcalLIP = gLIP*9, kcalGLU = gGLU*3.4, kcalAA = gAA*4;
+      const kcalTot = kcalLIP + kcalGLU + kcalAA;
+      kcalTotais.value = Number.isFinite(kcalTot) ? f0(kcalTot) : '';
+
+      const aporte = (Number.isFinite(kcalTot) && P>0) ? (kcalTot / P) : NaN;
+      aporteKcalKg.value = Number.isFinite(aporte) ? f1(aporte) : '';
+
+      // mEq Ca e Mg
+      const mEqCa = Number.isFinite(dCa) ? (P*dCa) : 0;
+      const mEqMg = Number.isFinite(dMg) ? (P*dMg) : 0;
+
+      // Cátions divalentes (mEq/L) = (mEq Ca + mEq Mg) * 1000 / Vtotal_mL
+      const cat_diva = (Number.isFinite(Vtotal_mL) && Vtotal_mL>0) ? ((mEqCa + mEqMg) * 1000 / Vtotal_mL) : NaN;
+      catDiva.value = Number.isFinite(cat_diva) ? f1(cat_diva) : '';
+
+      // Totais de Na e K (mEq)
+      const mEqNa_from_NaCl = Number.isFinite(dNa) ? (P*dNa) : 0;
+      const mEqNa_from_P = (srcPSelect.value==='gly' && Number.isFinite(PVol)) ? (MEQ_PER_ML_NA_GLY*PVol) : 0;
+      const Na_total_mEq = mEqNa_from_NaCl + mEqNa_from_P;
+
+      const mEqK_from_KCl = Number.isFinite(dK) ? (P*dK) : 0;
+      const mEqK_from_P = (srcPSelect.value==='kphos' && Number.isFinite(PVol)) ? (MEQ_PER_ML_K_PHOS*PVol) : 0;
+      const K_total_mEq = mEqK_from_KCl + mEqK_from_P;
+
+      // Em mEq/kg (dividir pelo peso P)
+      const Na_per_kg = (P>0) ? (Na_total_mEq / P) : NaN;
+      const K_per_kg  = (P>0) ? (K_total_mEq / P)  : NaN;
+      naTotal.value = Number.isFinite(Na_per_kg) ? f2(Na_per_kg) : '';
+      kTotal.value  = Number.isFinite(K_per_kg)  ? f2(K_per_kg)  : '';
+
+      // Concentração da solução (%G, g glicose por 100 mL)
+      const conc = (Vtotal_mL>0) ? ((gGLU / Vtotal_mL) * 100) : NaN;
+      concSolucao.value = Number.isFinite(conc) ? f1(conc) : '';
+
+      // Relação Ca:P (mg:mg) -> mostrar como X : 1
+      const mgCa = mEqCa * 20; // 1 mEq Ca ≈ 20 mg
+      const mgP_for_ratio = Number.isFinite(PVol) ? (PVol*31) : NaN;
+      const ratioCaP = (Number.isFinite(mgP_for_ratio) && mgP_for_ratio>0) ? (mgCa/mgP_for_ratio) : NaN;
+      relCaP.value = Number.isFinite(ratioCaP) ? (f2(ratioCaP) + ' : 1') : '';
+
+      // Osmolaridade estimada
+      const A_g_L = (V_L>0) ? (gAA / V_L) : NaN;
+      const G_g_L = (V_L>0) ? (gGLU / V_L) : NaN;
+      const Na_mEq_L = (V_L>0) ? (Na_total_mEq / V_L) : NaN;
+      const P_mg_L = (V_L>0 && Number.isFinite(mgP_for_ratio)) ? (mgP_for_ratio / V_L) : NaN;
+      const osm = (Number.isFinite(A_g_L) && Number.isFinite(G_g_L) && Number.isFinite(Na_mEq_L) && Number.isFinite(P_mg_L))
+        ? (A_g_L*8 + G_g_L*7 + Na_mEq_L*2 + P_mg_L*0.2 - 50)
+        : NaN;
+      osmolaridade.value = Number.isFinite(osm) ? f0(osm) : '';
+
+      // Relação gN/Kcal não proteica -> 1 : X
+      const kcalNP = kcalLIP + kcalGLU;
+      const relGN = (gAA>0) ? ((kcalNP*6.25)/gAA) : NaN;
+      relGNKcalNP.value = Number.isFinite(relGN) ? ('1 : ' + f1(relGN)) : '';
+    }
+
+    function addListeners(list){ list.forEach(el => el && el.addEventListener('input', calcVolumes)); }
+    pesoEl.addEventListener('input', () => { atualizarPesoCalorico(); calcVolumes(); });
+    addListeners([doseH2O, doseAA, doseLIP, doseG50, doseNaCl10, doseKCl10, doseMg10, doseCaGlu10, dosePmgkg, doseSe, doseZn, doseTE, doseGln]);
+    srcPSelect.addEventListener('change', () => { updatePUI(); calcVolumes(); });
+    srcNaClSelect.addEventListener('change', calcVolumes);
+    srcKClSelect.addEventListener('change', calcVolumes);
+    btnLimpar.addEventListener('click', () => {
+      document.querySelectorAll('#editor input').forEach(inp => { if(!inp.readOnly) inp.value=''; else inp.value=''; });
+      document.getElementById('srcPSelect').value = '';
+      document.getElementById('srcNaClSelect').value = '10';
+      document.getElementById('srcKClSelect').value = '10';
+      calcVolumes(); atualizarPesoCalorico();
+    });
+
+    // ===== Resumo / Imprimir =====
+    const overlayResumo = document.getElementById('overlayResumo');
+    const btnResumo = document.getElementById('btnResumo');
+    const btnVoltar = document.getElementById('btnVoltar');
+    const btnImprimir = document.getElementById('btnImprimir');
+
+    const kvHeader = document.getElementById('kvHeader');
+    const kvComponentes = document.getElementById('kvComponentes');
+    const chipsTotais = document.getElementById('chipsTotais');
+    const kvInfo = document.getElementById('kvInfo');
+
+    function linhaKV(label, valor, unidade=''){
+      const v = nonEmpty(valor) ? valor : '—';
+      return `<div><span>${label}</span><b>${v}${unidade ? ' ' + unidade : ''}</b></div>`;
+    }
+
+    function buildResumo(){
+      kvHeader.innerHTML = [
+        ['Hospital', hospital.value],
+        ['Nome', nome.value],
+        ['Idade', idade.value],
+        ['Peso (kg)', pesoEl.value],
+        ['Peso calórico (kcal)', pesoCaloricoEl.value],
+        ['Setor', setor.value],
+        ['Leito', leito.value],
+        ['Registro', registro.value],
+      ].map(([k,v]) => linhaKV(k, v)).join('');
+
+      const comp = [
+        ['Oferta hídrica (alvo)', volH2O.value, 'ml'],
+        ['Aminoácidos 10%', volAA.value, 'ml'],
+        ['Lipídeos 20%', volLIP.value, 'ml'],
+        ['Glicose 50%', volG50.value, 'ml'],
+        [srcNaClSelect.value === '20' ? 'Cloreto de sódio 20%' : 'Cloreto de sódio 10%', volNaCl10.value, 'ml'],
+        [srcKClSelect.value === '191' ? 'Cloreto de potássio 19,1%' : 'Cloreto de potássio 10%', volKCl10.value, 'ml'],
+        ['Sulfato de magnésio 10%', volMg10.value, 'ml'],
+        ['Gluconato de cálcio 10%', volCaGlu10.value, 'ml'],
+        [srcPSelect.value === 'gly' ? 'Glicerofosfato de sódio' : (srcPSelect.value === 'kphos' ? 'Fosfato de K (2 mEq/mL)' : 'Fósforo'), volP.value, 'ml'],
+        ['Selênio', volSe.value, 'ml'],
+        ['Zinco', volZn.value, 'ml'],
+        ['Oligoelementos', volTE.value, 'ml'],
+        ['Polivitamínicos — TrezevitAB', volMVI.value, 'ml'],
+        ['Glutamina', volGln.value, 'ml'],
+        ['Água destilada', aguaDestilada.value, 'ml'],
+      ].filter(([_,v]) => nonEmptyVal(v));
+      kvComponentes.innerHTML = comp.map(([k,v,u]) => linhaKV(k, v, u)).join('');
+
+      chipsTotais.innerHTML = '';
+      if(nonEmptyVal(volTotal.value)){
+        const chip = document.createElement('div'); chip.className = 'chip'; chip.textContent = `Volume total: ${volTotal.value} mL`; chipsTotais.appendChild(chip);
+      }
+      if(nonEmptyVal(somaComponentes.value)){
+        const chip = document.createElement('div'); chip.className = 'chip'; chip.textContent = `Soma dos componentes: ${somaComponentes.value} mL`; chipsTotais.appendChild(chip);
+      }
+
+      kvInfo.innerHTML = [
+        ['Calorias totais', kcalTotais.value, 'kcal/dia'],
+        ['Aporte calórico', aporteKcalKg.value, 'kcal/kg/dia'],
+        ['Cátions divalentes (Ca+Mg)', catDiva.value, 'mEq/L'],
+        ['Osmolaridade estimada', osmolaridade.value, 'mOsm/L'],
+        ['Potássio total', kTotal.value, 'mEq/kg'],
+        ['Sódio total', naTotal.value, 'mEq/kg'],
+        ['Concentração da solução (G%)', concSolucao.value, '%'],
+        ['Relação Ca:P', relCaP.value, ''],
+        ['Relação gN/Kcal NP', relGNKcalNP.value, ''],
+      ].map(([k,v,u]) => linhaKV(k,v,u)).join('');
+    }
+
+    btnResumo.addEventListener('click', () => { buildResumo(); overlayResumo.style.display = 'flex'; });
+    btnVoltar.addEventListener('click', () => { overlayResumo.style.display = 'none'; });
+    btnImprimir.addEventListener('click', () => { buildResumo(); window.print(); });
+
+    // ===== Aviso de responsabilidade =====
+    const overlayDisclaimer = document.getElementById('overlayDisclaimer');
+    const btnFecharDisclaimer = document.getElementById('btnFecharDisclaimer');
+    btnFecharDisclaimer.addEventListener('click', () => { overlayDisclaimer.style.display = 'none'; });
+
+    (function init(){ updatePUI(); overlayDisclaimer.style.display = 'flex'; })();
+  </script>
+</body>
+</html>
