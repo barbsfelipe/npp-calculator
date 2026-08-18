@@ -50,18 +50,20 @@ Peça ao usuário para:
 
 Nota: os produtos de assinatura (mensal/anual) em si só podem ser cadastrados dentro do RevenueCat depois que existirem contas de desenvolvedor Apple/Google reais com produtos criados no App Store Connect/Play Console — isso é da seção "Configuração de lojas" do spec, fora do escopo deste plano. As Tasks 2-4 aqui constroem e testam toda a lógica em volta disso (trial, conta, chamadas ao SDK) sem depender dos produtos existirem ainda.
 
-- [ ] **Step 3: Criar `app-mobile/www/config.js` com os 4 valores reais**
+- [ ] **Step 3: Criar `app-mobile/www/config.js` com os valores reais**
 
-Depois de ter os 4 valores do usuário, crie o arquivo com este formato exato (substituindo pelos valores reais coletados):
+Depois de ter os valores do usuário, crie o arquivo com este formato exato (substituindo pelos valores reais coletados). Se o app iOS do RevenueCat ainda não puder ser criado (bloqueado por exigir credenciais da App Store Connect que só existem com conta Apple Developer ativa — ver nota abaixo), use o valor sentinela `'PENDENTE_CONTA_APPLE_DEVELOPER'` em `revenueCatApiKeyIOS` em vez de inventar uma chave falsa:
 
 ```js
 window.NPP_CONFIG = {
   supabaseUrl: 'https://xxxxxxxxxxxx.supabase.co',
   supabaseAnonKey: 'eyJ...',
-  revenueCatApiKeyIOS: 'appl_...',
+  revenueCatApiKeyIOS: 'appl_...', // ou 'PENDENTE_CONTA_APPLE_DEVELOPER' se ainda não existir
   revenueCatApiKeyAndroid: 'goog_...',
 };
 ```
+
+Nota: o app iOS no RevenueCat pode exigir, na própria tela de criação, um Key ID + Issuer ID + arquivo `.p8` da App Store Connect (usados pra sincronizar dados de transação) — e esses só existem com uma conta Apple Developer Program ativa. Se isso acontecer e o usuário ainda não tiver essa conta, crie só o app Android no RevenueCat agora e use o sentinel acima para `revenueCatApiKeyIOS`; a Task 4 já trata esse valor sem quebrar (não tenta configurar o SDK no iOS enquanto a chave for o sentinel — só loga um aviso).
 
 - [ ] **Step 4: Verificar**
 
@@ -71,13 +73,13 @@ const fs = require('fs');
 const content = fs.readFileSync('www/config.js', 'utf8');
 if (!/supabaseUrl:\s*'https:\/\/.+\.supabase\.co'/.test(content)) throw new Error('supabaseUrl ausente/inválido');
 if (!/supabaseAnonKey:\s*'eyJ/.test(content)) throw new Error('supabaseAnonKey ausente/inválido');
-if (!/revenueCatApiKeyIOS:\s*'appl_/.test(content)) throw new Error('revenueCatApiKeyIOS ausente/inválido');
+if (!/revenueCatApiKeyIOS:\s*'(appl_|PENDENTE_CONTA_APPLE_DEVELOPER)/.test(content)) throw new Error('revenueCatApiKeyIOS ausente/inválido');
 if (!/revenueCatApiKeyAndroid:\s*'goog_/.test(content)) throw new Error('revenueCatApiKeyAndroid ausente/inválido');
-console.log('OK — config.js com os 4 valores no formato esperado.');
+console.log('OK — config.js com os valores no formato esperado.');
 "
 ```
 
-Expected: `OK — config.js com os 4 valores no formato esperado.`
+Expected: `OK — config.js com os valores no formato esperado.`
 
 - [ ] **Step 5: Commit**
 
@@ -826,6 +828,10 @@ New string:
       if (!isNativePlatform()) return;
       const platform = window.Capacitor.getPlatform();
       const apiKey = platform === 'ios' ? window.NPP_CONFIG.revenueCatApiKeyIOS : window.NPP_CONFIG.revenueCatApiKeyAndroid;
+      if (!apiKey || apiKey === 'PENDENTE_CONTA_APPLE_DEVELOPER') {
+        console.warn('RevenueCat não configurado: chave de ' + platform + ' ainda pendente em config.js');
+        return;
+      }
       await purchasesPlugin().configure({ apiKey });
     }
     async function revenueCatLogIn(userId) {
