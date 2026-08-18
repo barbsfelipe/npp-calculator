@@ -970,8 +970,10 @@ Expected: os três PASS.
 - [ ] **Step 12: Commit**
 
 ```bash
-cd "app-mobile" && git add package.json package-lock.json www/index.html tests/paywall.mjs && git commit -m "Adiciona assinatura via RevenueCat (mensal/anual) e paywall completo"
+cd "app-mobile" && git add package.json package-lock.json www/index.html tests/paywall.mjs android ios && git commit -m "Adiciona assinatura via RevenueCat (mensal/anual) e paywall completo"
 ```
+
+(`android`/`ios` porque o `npx cap sync` do Step 1 também atualiza os projetos nativos com o novo plugin — mesmo padrão já visto na Task 2 com `@capacitor/preferences`.)
 
 ---
 
