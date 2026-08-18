@@ -4,6 +4,8 @@
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
   <title>Calculadora de NPP — Prescrição</title>
+  <script src="config.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.js"></script>
   <style>
     *,*::before,*::after{box-sizing:border-box;}
     :root{
@@ -92,17 +94,17 @@
     #end-actions{display:flex; justify-content:flex-end; gap:10px; margin-top:26px; padding-top:18px; border-top:1px solid var(--line);}
 
     /* ===== Resumo de Prescrição ===== */
-    #overlayResumo, #overlayDisclaimer, #overlayPaywall{
+    #overlayResumo, #overlayDisclaimer, #overlayPaywall, #overlayAuth{
       position: fixed; inset: 0; background: rgba(30,40,40,.32);
       display:none; align-items: center; justify-content: center; padding: 24px;
       z-index: 9999;
     }
-    #resumoCard, #disclaimerCard, #paywallCard{
+    #resumoCard, #disclaimerCard, #paywallCard, #authCard{
       width: 210mm; max-width: 100%; background: #fff; border-radius: 14px; box-shadow:0 20px 60px rgba(20,30,30,.25);
       padding: 18mm; max-height: 90vh; overflow: auto;
     }
-    #disclaimerCard, #paywallCard{width:120mm}
-    #resumoCard h2, #disclaimerCard h2, #paywallCard h2{margin:0 0 8px 0; font-size:18px; color:var(--fg);}
+    #disclaimerCard, #paywallCard, #authCard{width:120mm}
+    #resumoCard h2, #disclaimerCard h2, #paywallCard h2, #authCard h2{margin:0 0 8px 0; font-size:18px; color:var(--fg);}
     #resumoCard .muted{color:var(--muted); font-size:12px; margin-bottom:12px}
     .resumo-sec{margin-top:14px}
     .resumo-sec h3{font-size:13px; margin:8px 0; color:var(--fg);}
@@ -494,6 +496,31 @@
     </div>
   </div>
 
+  <!-- Overlay Conta (criar conta / entrar) -->
+  <div id="overlayAuth" role="dialog" aria-modal="true" aria-labelledby="authTitulo">
+    <div id="authCard">
+      <h2 id="authTitulo">Criar conta</h2>
+      <p class="sub">Sua conta libera o acesso no celular e no computador com a mesma assinatura.</p>
+      <div class="grid row">
+        <div class="field span-12">
+          <label for="authEmail">E-mail</label>
+          <input id="authEmail" type="email" placeholder="voce@exemplo.com" />
+        </div>
+      </div>
+      <div class="grid row">
+        <div class="field span-12">
+          <label for="authPassword">Senha</label>
+          <input id="authPassword" type="password" placeholder="mínimo 6 caracteres" />
+        </div>
+      </div>
+      <div id="authError" class="sub" style="color:var(--danger); display:none"></div>
+      <div class="resumo-actions">
+        <button type="button" class="secondary" id="btnAuthToggle">Já tenho conta</button>
+        <button type="button" id="btnAuthSubmit">Criar conta</button>
+      </div>
+    </div>
+  </div>
+
   <script>
     // ===== Utilidades =====
     function parseNumberBR(v){
@@ -858,6 +885,56 @@
     btnFecharDisclaimer.addEventListener('click', async () => {
       overlayDisclaimer.style.display = 'none';
       await prefsSet(DISCLAIMER_KEY, '1');
+    });
+
+    // ===== Conta (Supabase Auth) =====
+    const supabaseClient = window.supabase.createClient(window.NPP_CONFIG.supabaseUrl, window.NPP_CONFIG.supabaseAnonKey);
+    const overlayAuth = document.getElementById('overlayAuth');
+    const authEmail = document.getElementById('authEmail');
+    const authPassword = document.getElementById('authPassword');
+    const authError = document.getElementById('authError');
+    const authTitulo = document.getElementById('authTitulo');
+    const btnAuthSubmit = document.getElementById('btnAuthSubmit');
+    const btnAuthToggle = document.getElementById('btnAuthToggle');
+    let authMode = 'signup';
+
+    function setAuthMode(mode) {
+      authMode = mode;
+      authTitulo.textContent = mode === 'signup' ? 'Criar conta' : 'Entrar';
+      btnAuthSubmit.textContent = mode === 'signup' ? 'Criar conta' : 'Entrar';
+      btnAuthToggle.textContent = mode === 'signup' ? 'Já tenho conta' : 'Criar conta nova';
+      authError.style.display = 'none';
+    }
+    btnAuthToggle.addEventListener('click', () => { setAuthMode(authMode === 'signup' ? 'login' : 'signup'); });
+
+    async function getCurrentSession() {
+      const { data } = await supabaseClient.auth.getSession();
+      return data.session;
+    }
+
+    btnAuthSubmit.addEventListener('click', async () => {
+      authError.style.display = 'none';
+      const email = authEmail.value.trim();
+      const password = authPassword.value;
+      const { data, error } = authMode === 'signup'
+        ? await supabaseClient.auth.signUp({ email, password })
+        : await supabaseClient.auth.signInWithPassword({ email, password });
+      if (error) {
+        authError.textContent = error.message;
+        authError.style.display = 'block';
+        return;
+      }
+      if (!data.session) {
+        authError.textContent = 'Confirme seu e-mail antes de entrar.';
+        authError.style.display = 'block';
+        return;
+      }
+      overlayAuth.style.display = 'none';
+    });
+
+    document.getElementById('btnAssinar').addEventListener('click', () => {
+      overlayAuth.style.display = 'flex';
+      setAuthMode('signup');
     });
 
     // ===== Trial gratuito (3 prescrições) =====
