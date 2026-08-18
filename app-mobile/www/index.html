@@ -489,9 +489,18 @@
   <div id="overlayPaywall" role="dialog" aria-modal="true" aria-labelledby="paywallTitulo">
     <div id="paywallCard">
       <h2 id="paywallTitulo">Seu período gratuito acabou</h2>
-      <p>Você já usou as 3 prescrições grátis. Assine para continuar usando a calculadora sem limites.</p>
+      <p>Você já usou as 3 prescrições grátis. Escolha um plano para continuar usando a calculadora sem limites.</p>
+      <div class="grid row">
+        <div class="field span-6">
+          <button type="button" id="btnPlanoMensal" style="width:100%">Mensal — R$49,90/mês</button>
+        </div>
+        <div class="field span-6">
+          <button type="button" id="btnPlanoAnual" style="width:100%">Anual — R$298,80/ano (R$24,90/mês)</button>
+        </div>
+      </div>
       <div class="resumo-actions">
-        <button type="button" id="btnAssinar">Assinar</button>
+        <button type="button" class="secondary" id="btnRestaurarCompra">Restaurar compra</button>
+        <button type="button" class="secondary" id="btnJaTenhoConta">Já tenho conta</button>
       </div>
     </div>
   </div>
@@ -930,11 +939,52 @@
         return;
       }
       overlayAuth.style.display = 'none';
+      await revenueCatLogIn(data.session.user.id);
+      await purchaseSelectedPlan();
     });
 
-    document.getElementById('btnAssinar').addEventListener('click', () => {
+    let selectedPlan = null; // 'monthly' | 'annual'
+    function openAuthForPlan(plan) {
+      selectedPlan = plan;
       overlayAuth.style.display = 'flex';
       setAuthMode('signup');
+    }
+    document.getElementById('btnPlanoMensal').addEventListener('click', () => openAuthForPlan('monthly'));
+    document.getElementById('btnPlanoAnual').addEventListener('click', () => openAuthForPlan('annual'));
+    document.getElementById('btnJaTenhoConta').addEventListener('click', () => { overlayAuth.style.display = 'flex'; setAuthMode('login'); });
+
+    // ===== Assinatura (RevenueCat) =====
+    function purchasesPlugin() {
+      return window.Capacitor && window.Capacitor.Plugins && window.Capacitor.Plugins.CapacitorPurchases;
+    }
+    async function configurePurchases() {
+      if (!isNativePlatform()) return;
+      const platform = window.Capacitor.getPlatform();
+      const apiKey = platform === 'ios' ? window.NPP_CONFIG.revenueCatApiKeyIOS : window.NPP_CONFIG.revenueCatApiKeyAndroid;
+      if (!apiKey || apiKey === 'PENDENTE_CONTA_APPLE_DEVELOPER') {
+        console.warn('RevenueCat não configurado: chave de ' + platform + ' ainda pendente em config.js');
+        return;
+      }
+      await purchasesPlugin().configure({ apiKey });
+    }
+    async function revenueCatLogIn(userId) {
+      if (!isNativePlatform()) return;
+      await purchasesPlugin().logIn({ appUserID: userId });
+    }
+    async function purchaseSelectedPlan() {
+      if (!isNativePlatform() || !selectedPlan) return;
+      const { current } = await purchasesPlugin().getOfferings();
+      if (!current) return;
+      const pkg = selectedPlan === 'monthly' ? current.monthly : current.annual;
+      if (!pkg) return;
+      await purchasesPlugin().purchasePackage({ aPackage: pkg });
+      selectedPlan = null;
+      overlayPaywall.style.display = 'none';
+    }
+    document.getElementById('btnRestaurarCompra').addEventListener('click', async () => {
+      if (!isNativePlatform()) return;
+      await purchasesPlugin().restorePurchases();
+      if (await window.hasActiveSubscription()) { overlayPaywall.style.display = 'none'; }
     });
 
     // ===== Trial gratuito (3 prescrições) =====
@@ -942,9 +992,10 @@
     const TRIAL_LIMIT = 3;
     const overlayPaywall = document.getElementById('overlayPaywall');
 
-    // Task 4 substitui o corpo desta função pela checagem real via RevenueCat.
     window.hasActiveSubscription = async function hasActiveSubscription() {
-      return false;
+      if (!isNativePlatform()) return false;
+      const { customerInfo } = await purchasesPlugin().getCustomerInfo();
+      return Object.keys(customerInfo.entitlements.active).length > 0;
     };
 
     async function getTrialCount() {
@@ -954,7 +1005,7 @@
     }
 
     async function tryStartPrescription() {
-      if (await window.hasActiveSubscription()) return true;
+      if (await window.hasActiveSubscription()) { overlayPaywall.style.display = 'none'; return true; }
       const count = await getTrialCount();
       if (count >= TRIAL_LIMIT) {
         overlayPaywall.style.display = 'flex';
@@ -966,6 +1017,7 @@
 
     (async function init(){
       updatePUI();
+      await configurePurchases();
       const allowed = await tryStartPrescription();
       if (allowed) {
         const accepted = await prefsGet(DISCLAIMER_KEY);
