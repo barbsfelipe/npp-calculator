@@ -92,17 +92,17 @@
     #end-actions{display:flex; justify-content:flex-end; gap:10px; margin-top:26px; padding-top:18px; border-top:1px solid var(--line);}
 
     /* ===== Resumo de Prescrição ===== */
-    #overlayResumo, #overlayDisclaimer{
+    #overlayResumo, #overlayDisclaimer, #overlayPaywall{
       position: fixed; inset: 0; background: rgba(30,40,40,.32);
       display:none; align-items: center; justify-content: center; padding: 24px;
       z-index: 9999;
     }
-    #resumoCard, #disclaimerCard{
+    #resumoCard, #disclaimerCard, #paywallCard{
       width: 210mm; max-width: 100%; background: #fff; border-radius: 14px; box-shadow:0 20px 60px rgba(20,30,30,.25);
       padding: 18mm; max-height: 90vh; overflow: auto;
     }
-    #disclaimerCard{width:120mm}
-    #resumoCard h2, #disclaimerCard h2{margin:0 0 8px 0; font-size:18px; color:var(--fg);}
+    #disclaimerCard, #paywallCard{width:120mm}
+    #resumoCard h2, #disclaimerCard h2, #paywallCard h2{margin:0 0 8px 0; font-size:18px; color:var(--fg);}
     #resumoCard .muted{color:var(--muted); font-size:12px; margin-bottom:12px}
     .resumo-sec{margin-top:14px}
     .resumo-sec h3{font-size:13px; margin:8px 0; color:var(--fg);}
@@ -483,6 +483,17 @@
     </div>
   </div>
 
+  <!-- Overlay Paywall (trial esgotado / sem assinatura) -->
+  <div id="overlayPaywall" role="dialog" aria-modal="true" aria-labelledby="paywallTitulo">
+    <div id="paywallCard">
+      <h2 id="paywallTitulo">Seu período gratuito acabou</h2>
+      <p>Você já usou as 3 prescrições grátis. Assine para continuar usando a calculadora sem limites.</p>
+      <div class="resumo-actions">
+        <button type="button" id="btnAssinar">Assinar</button>
+      </div>
+    </div>
+  </div>
+
   <script>
     // ===== Utilidades =====
     function parseNumberBR(v){
@@ -739,7 +750,9 @@
     srcPSelect.addEventListener('change', () => { updatePUI(); calcVolumes(); });
     srcNaClSelect.addEventListener('change', calcVolumes);
     srcKClSelect.addEventListener('change', calcVolumes);
-    btnLimpar.addEventListener('click', () => {
+    btnLimpar.addEventListener('click', async () => {
+      const allowed = await tryStartPrescription();
+      if (!allowed) return;
       document.querySelectorAll('#editor input').forEach(inp => { if(!inp.readOnly) inp.value=''; else inp.value=''; });
       document.getElementById('srcPSelect').value = '';
       document.getElementById('srcNaClSelect').value = '10';
@@ -819,12 +832,69 @@
     btnVoltar.addEventListener('click', () => { overlayResumo.style.display = 'none'; });
     btnImprimir.addEventListener('click', () => { buildResumo(); window.print(); });
 
+    // ===== Preferences (local, com fallback pra localStorage fora do app nativo) =====
+    function isNativePlatform() {
+      return !!(window.Capacitor && window.Capacitor.isNativePlatform && window.Capacitor.isNativePlatform());
+    }
+    async function prefsGet(key) {
+      if (isNativePlatform()) {
+        const { value } = await window.Capacitor.Plugins.Preferences.get({ key });
+        return value;
+      }
+      return window.localStorage.getItem(key);
+    }
+    async function prefsSet(key, value) {
+      if (isNativePlatform()) {
+        await window.Capacitor.Plugins.Preferences.set({ key, value: String(value) });
+      } else {
+        window.localStorage.setItem(key, String(value));
+      }
+    }
+
     // ===== Aviso de responsabilidade =====
     const overlayDisclaimer = document.getElementById('overlayDisclaimer');
     const btnFecharDisclaimer = document.getElementById('btnFecharDisclaimer');
-    btnFecharDisclaimer.addEventListener('click', () => { overlayDisclaimer.style.display = 'none'; });
+    const DISCLAIMER_KEY = 'disclaimerAccepted';
+    btnFecharDisclaimer.addEventListener('click', async () => {
+      overlayDisclaimer.style.display = 'none';
+      await prefsSet(DISCLAIMER_KEY, '1');
+    });
 
-    (function init(){ updatePUI(); overlayDisclaimer.style.display = 'flex'; })();
+    // ===== Trial gratuito (3 prescrições) =====
+    const TRIAL_KEY = 'trialUsageCount';
+    const TRIAL_LIMIT = 3;
+    const overlayPaywall = document.getElementById('overlayPaywall');
+
+    // Task 4 substitui o corpo desta função pela checagem real via RevenueCat.
+    window.hasActiveSubscription = async function hasActiveSubscription() {
+      return false;
+    };
+
+    async function getTrialCount() {
+      const raw = await prefsGet(TRIAL_KEY);
+      const n = parseInt(raw, 10);
+      return Number.isFinite(n) ? n : 0;
+    }
+
+    async function tryStartPrescription() {
+      if (await window.hasActiveSubscription()) return true;
+      const count = await getTrialCount();
+      if (count >= TRIAL_LIMIT) {
+        overlayPaywall.style.display = 'flex';
+        return false;
+      }
+      await prefsSet(TRIAL_KEY, count + 1);
+      return true;
+    }
+
+    (async function init(){
+      updatePUI();
+      const allowed = await tryStartPrescription();
+      if (allowed) {
+        const accepted = await prefsGet(DISCLAIMER_KEY);
+        if (accepted !== '1') { overlayDisclaimer.style.display = 'flex'; }
+      }
+    })();
   </script>
 </body>
 </html>
