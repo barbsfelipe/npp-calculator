@@ -1,0 +1,26 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1024" height="1024" viewBox="0 0 100 100">
+  <defs>
+    <radialGradient id="bgGrad" cx="32%" cy="22%" r="85%">
+      <stop offset="0%" stop-color="#2c333c"/>
+      <stop offset="75%" stop-color="#0f1216"/>
+    </radialGradient>
+    <linearGradient id="ringGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#bdf4ef"/>
+      <stop offset="100%" stop-color="#3aa7ad"/>
+    </linearGradient>
+    <radialGradient id="coreGrad" cx="35%" cy="30%" r="70%">
+      <stop offset="0%" stop-color="#e8f4ff"/>
+      <stop offset="45%" stop-color="#8fb8e8"/>
+      <stop offset="100%" stop-color="#2c4f86"/>
+    </radialGradient>
+  </defs>
+  <rect x="0" y="0" width="100" height="100" fill="url(#bgGrad)"/>
+  <ellipse cx="50" cy="50" rx="46" ry="17" fill="none" stroke="url(#ringGrad)" stroke-width="2.4" opacity="0.9" transform="rotate(-18 50 50)"/>
+  <ellipse cx="50" cy="50" rx="46" ry="17" fill="none" stroke="url(#ringGrad)" stroke-width="2.4" opacity="0.7" transform="rotate(48 50 50)"/>
+  <ellipse cx="50" cy="50" rx="46" ry="17" fill="none" stroke="url(#ringGrad)" stroke-width="2.4" opacity="0.6" transform="rotate(114 50 50)"/>
+  <circle cx="86.5" cy="44" r="3.6" fill="#e8fffb"/>
+  <circle cx="18" cy="61" r="3" fill="#e8fffb"/>
+  <circle cx="63" cy="14" r="2.8" fill="#e8fffb"/>
+  <circle cx="50" cy="50" r="21" fill="url(#coreGrad)" stroke="#1c355e" stroke-width="1"/>
+  <text x="50" y="55" font-family="-apple-system, Helvetica, Arial, sans-serif" font-size="13.5" font-weight="800" letter-spacing="0.5" fill="#0d2547" text-anchor="middle">NPP</text>
+</svg>
