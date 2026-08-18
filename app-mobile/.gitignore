@@ -1,5 +1,4 @@
 node_modules/
-ios/App/Pods/
 ios/App/build/
 ios/App/App/public/
 android/build/
@@ -9,4 +8,4 @@ android/app/src/main/assets/public/
 .DS_Store
 resources/*.png
 www/manifest.json
-icons/
+/icons/
