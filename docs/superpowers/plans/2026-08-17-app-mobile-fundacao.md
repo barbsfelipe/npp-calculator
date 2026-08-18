@@ -237,7 +237,7 @@ New string:
 cd "app-mobile" && node tests/calc-parity.mjs
 ```
 
-Expected: PASS — imprime `OK — 25 campos calculados batem entre original e portado.`
+Expected: PASS — imprime `OK — 26 campos calculados batem entre original e portado.` (26, não 25 — `OUTPUT_FIELDS.length` é calculado dinamicamente pelo script; a contagem exata não importa, o teste sempre imprime o valor real do array acima).
 
 - [ ] **Step 5: Commit**
 
@@ -294,6 +294,8 @@ npx cap sync android
 Expected: cria `app-mobile/android/`; `cap sync` termina com `✔ Sync finished`.
 
 - [ ] **Step 4: Rodar no simulador iOS e conferir visualmente**
+
+Nota (registrado após a execução do Plano 1): o Capacitor 8 gera o projeto iOS via Swift Package Manager, não CocoaPods — não existe `App.xcworkspace`, abra `App.xcodeproj` no Xcode.
 
 ```bash
 cd "app-mobile"
@@ -465,6 +467,8 @@ npx capacitor-assets generate --iconOnly
 ```
 
 Expected: o comando reporta ícones gerados para `ios/App/App/Assets.xcassets/AppIcon.appiconset/` e `android/app/src/main/res/mipmap-*/` (incluindo as camadas `ic_launcher_background`/`ic_launcher_foreground` do ícone adaptativo).
+
+Nota (registrado após a execução do Plano 1): a versão instalada do `@capacitor/assets` (3.0.5) não tem a flag `--iconOnly` — rode `npx capacitor-assets generate` sem flags. Isso também gera splash screens (a partir do mesmo `icon.png`, ficam com fundo branco e o quadrado escuro do ícone no meio — não é um design revisado) e ícones PWA soltos em `resources/`/`www/` que não fazem parte do escopo deste app (que não é uma PWA). Delete os artefatos de PWA gerados (`icons/`, `www/manifest.json`) e trate os splash screens como pendência de design separada antes de submeter às lojas — não são clinicamente sensíveis, só não foram desenhados.
 
 - [ ] **Step 5: Sincronizar e conferir visualmente nos dois simuladores**
 
