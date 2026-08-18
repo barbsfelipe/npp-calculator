@@ -952,6 +952,9 @@
       paywallStatus.textContent = text;
       paywallStatus.style.display = 'block';
     }
+    function hidePaywallStatus() {
+      paywallStatus.style.display = 'none';
+    }
 
     btnAuthSubmit.addEventListener('click', async () => {
       authError.style.display = 'none';
@@ -995,6 +998,7 @@
     let selectedPlan = null; // 'monthly' | 'annual'
     function openAuthForPlan(plan) {
       selectedPlan = plan;
+      hidePaywallStatus();
       overlayAuth.style.display = 'flex';
       setAuthMode('signup');
     }
@@ -1045,8 +1049,18 @@
     }
     document.getElementById('btnRestaurarCompra').addEventListener('click', async () => {
       if (!isNativePlatform() || !purchasesConfigured) return;
-      await purchasesPlugin().restorePurchases();
-      if (await window.hasActiveSubscription()) { overlayPaywall.style.display = 'none'; }
+      hidePaywallStatus();
+      try {
+        await purchasesPlugin().restorePurchases();
+        if (await window.hasActiveSubscription()) {
+          overlayPaywall.style.display = 'none';
+        } else {
+          showPaywallStatus('Nenhuma assinatura ativa encontrada nessa conta da loja.');
+        }
+      } catch (e) {
+        console.warn('Erro ao restaurar compra:', e);
+        showPaywallStatus('Não foi possível restaurar a compra agora. Verifique sua conexão e tente de novo.');
+      }
     });
 
     // ===== Trial gratuito (3 prescrições) =====
@@ -1123,9 +1137,20 @@
       } catch (e) {
         console.warn('Falha ao configurar o RevenueCat na abertura do app:', e);
       }
-      const allowed = await checkAccessOnLaunch();
+      // Se o Preferences local falhar por algum motivo (ex: build nativo
+      // quebrado), não é motivo pra travar o app inteiro sem nem mostrar o
+      // aviso legal — assume liberado localmente e loga o aviso.
+      let allowed = true;
+      try {
+        allowed = await checkAccessOnLaunch();
+      } catch (e) {
+        console.warn('Falha ao checar o trial local na abertura do app:', e);
+      }
       if (allowed) {
-        const accepted = await prefsGet(DISCLAIMER_KEY);
+        const accepted = await prefsGet(DISCLAIMER_KEY).catch((e) => {
+          console.warn('Falha ao checar se o aviso legal já foi aceito:', e);
+          return null;
+        });
         if (accepted !== '1') { overlayDisclaimer.style.display = 'flex'; }
       }
     })();
