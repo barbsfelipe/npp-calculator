@@ -1056,8 +1056,17 @@
 
     window.hasActiveSubscription = async function hasActiveSubscription() {
       if (!isNativePlatform() || !purchasesConfigured) return false;
-      const { customerInfo } = await purchasesPlugin().getCustomerInfo();
-      return Object.keys(customerInfo.entitlements.active).length > 0;
+      // Uma falha aqui (ex: sem rede no 1º lançamento, RevenueCat fora do ar)
+      // não pode derrubar o aviso legal/trial/paywall — mesma classe de
+      // problema do try/catch do Supabase acima. Sem assinatura confirmada,
+      // trata como não-assinante (mais seguro: nunca libera de graça por engano).
+      try {
+        const { customerInfo } = await purchasesPlugin().getCustomerInfo();
+        return Object.keys(customerInfo.entitlements.active).length > 0;
+      } catch (e) {
+        console.warn('Não foi possível checar a assinatura (RevenueCat):', e);
+        return false;
+      }
     };
 
     async function getTrialCount() {
@@ -1109,7 +1118,11 @@
 
     (async function init(){
       updatePUI();
-      await configurePurchases();
+      try {
+        await configurePurchases();
+      } catch (e) {
+        console.warn('Falha ao configurar o RevenueCat na abertura do app:', e);
+      }
       const allowed = await checkAccessOnLaunch();
       if (allowed) {
         const accepted = await prefsGet(DISCLAIMER_KEY);
