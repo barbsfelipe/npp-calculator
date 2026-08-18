@@ -8,3 +8,5 @@ android/app/build/
 android/app/src/main/assets/public/
 .DS_Store
 resources/*.png
+www/manifest.json
+icons/
