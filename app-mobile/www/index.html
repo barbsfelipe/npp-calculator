@@ -941,6 +941,7 @@
       overlayAuth.style.display = 'none';
       await revenueCatLogIn(data.session.user.id);
       await purchaseSelectedPlan();
+      if (await window.hasActiveSubscription()) { overlayPaywall.style.display = 'none'; }
     });
 
     let selectedPlan = null; // 'monthly' | 'annual'
@@ -957,6 +958,7 @@
     function purchasesPlugin() {
       return window.Capacitor && window.Capacitor.Plugins && window.Capacitor.Plugins.CapacitorPurchases;
     }
+    let purchasesConfigured = false;
     async function configurePurchases() {
       if (!isNativePlatform()) return;
       const platform = window.Capacitor.getPlatform();
@@ -966,13 +968,14 @@
         return;
       }
       await purchasesPlugin().configure({ apiKey });
+      purchasesConfigured = true;
     }
     async function revenueCatLogIn(userId) {
-      if (!isNativePlatform()) return;
+      if (!isNativePlatform() || !purchasesConfigured) return;
       await purchasesPlugin().logIn({ appUserID: userId });
     }
     async function purchaseSelectedPlan() {
-      if (!isNativePlatform() || !selectedPlan) return;
+      if (!isNativePlatform() || !purchasesConfigured || !selectedPlan) return;
       const { current } = await purchasesPlugin().getOfferings();
       if (!current) return;
       const pkg = selectedPlan === 'monthly' ? current.monthly : current.annual;
@@ -982,7 +985,7 @@
       overlayPaywall.style.display = 'none';
     }
     document.getElementById('btnRestaurarCompra').addEventListener('click', async () => {
-      if (!isNativePlatform()) return;
+      if (!isNativePlatform() || !purchasesConfigured) return;
       await purchasesPlugin().restorePurchases();
       if (await window.hasActiveSubscription()) { overlayPaywall.style.display = 'none'; }
     });
@@ -993,7 +996,7 @@
     const overlayPaywall = document.getElementById('overlayPaywall');
 
     window.hasActiveSubscription = async function hasActiveSubscription() {
-      if (!isNativePlatform()) return false;
+      if (!isNativePlatform() || !purchasesConfigured) return false;
       const { customerInfo } = await purchasesPlugin().getCustomerInfo();
       return Object.keys(customerInfo.entitlements.active).length > 0;
     };
