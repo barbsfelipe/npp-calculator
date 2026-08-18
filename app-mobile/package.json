@@ -9,7 +9,7 @@
   "keywords": [],
   "author": "",
   "license": "ISC",
-  "type": "commonjs",
+  "type": "module",
   "dependencies": {
     "@capacitor/android": "^8.5.0",
     "@capacitor/core": "^8.5.0",
@@ -17,6 +17,7 @@
   },
   "devDependencies": {
     "@capacitor/cli": "^8.5.0",
-    "playwright-core": "^1.62.1"
+    "playwright-core": "^1.62.1",
+    "typescript": "^7.0.2"
   }
 }
