@@ -17,7 +17,7 @@
       --radius:12px; --gap:10px;
       --font: ui-sans-serif, system-ui, -apple-system, "Segoe UI", Roboto, Helvetica, Arial, "Apple Color Emoji","Segoe UI Emoji";
     }
-    html,body{height:100%;background:var(--bg);color:var(--fg);}
+    html,body{height:100%;background:var(--bg);color:var(--fg); -webkit-text-size-adjust:100%; text-size-adjust:100%;}
     body{margin:0;font-family:var(--font); -webkit-font-smoothing:antialiased; padding:env(safe-area-inset-top) env(safe-area-inset-right) env(safe-area-inset-bottom) env(safe-area-inset-left);}
 
     .sheet{width:min(900px, 100%); margin:28px auto; background:var(--surface); border:1px solid var(--line); border-radius:16px; padding:32px 36px 28px; box-shadow:0 1px 2px rgba(20,30,30,.04);}
@@ -27,7 +27,7 @@
     .sub{color:var(--muted); font-size:12px;}
 
     .grid{display:grid; grid-template-columns:repeat(12, minmax(0, 1fr)); gap:var(--gap);}
-    .field{display:flex; flex-direction:column; gap:6px;}
+    .field{display:flex; flex-direction:column; gap:6px; min-width:0;}
     label{font-size:11px; letter-spacing:.02em; color:var(--muted); font-weight:500;}
     input, select{
       border:1px solid var(--line); border-radius:9px; padding:9px 12px; font-size:14px;
@@ -67,6 +67,7 @@
     button{
       border:1px solid transparent; background:var(--accent); color:#fff; padding:9px 16px; border-radius:9px;
       font-size:13.5px; font-weight:500; cursor:pointer; transition:background .15s, transform .05s;
+      white-space:normal; line-height:1.3; overflow-wrap:break-word; min-width:0; max-width:100%;
     }
     button:hover{background:var(--accent-strong);}
     button:active{transform:translateY(1px);}
