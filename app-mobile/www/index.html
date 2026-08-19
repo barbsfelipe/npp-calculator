@@ -67,7 +67,14 @@
     button{
       border:1px solid transparent; background:var(--accent); color:#fff; padding:9px 16px; border-radius:9px;
       font-size:13.5px; font-weight:500; cursor:pointer; transition:background .15s, transform .05s;
-      white-space:normal; line-height:1.3; overflow-wrap:break-word; min-width:0; max-width:100%;
+      white-space:normal; line-height:1.3;
+    }
+    /* Só os botões de plano do paywall têm texto longo o bastante (com
+       tokens sem espaço tipo "R$298,80/ano") pra precisar desse reforço —
+       aplicar isso a todo botão fazia botões curtos numa fileira flex
+       (ex: "Entrar") encolherem e quebrarem no meio da palavra à toa. */
+    #btnPlanoMensal, #btnPlanoAnual{
+      overflow-wrap:break-word; min-width:0; max-width:100%;
     }
     button:hover{background:var(--accent-strong);}
     button:active{transform:translateY(1px);}
