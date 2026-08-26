@@ -43,9 +43,19 @@
     .span-3{grid-column:span 3}
     .span-2{grid-column:span 2}
 
-    .unit-wrap{position:relative}
-    .unit-wrap input{padding-right:56px}
+    /* Grid (não flex) de propósito: o badge de unidade (.unit) precisa ficar
+       centralizado na altura do input, não na altura do campo inteiro
+       (label+input). Com flex, top:50% centralizava relativo ao container
+       todo — certo enquanto o label cabia numa linha, mas descentralizava
+       assim que o label quebrava em 2 linhas numa coluna estreita (ex.:
+       "Peso calórico (auto)" no celular). Com grid, label fica na 1ª linha
+       (auto) e input+unit dividem a 2ª linha (mesma célula), então o unit
+       centraliza sempre na altura do input, não importa quantas linhas o
+       label ocupa. */
+    .unit-wrap{position:relative; display:grid; grid-template-columns:minmax(0,1fr); grid-template-rows:auto auto;}
+    .unit-wrap input{padding-right:56px; grid-row:2; grid-column:1;}
     .unit{position:absolute; right:10px; top:50%; transform:translateY(-50%); color:#666; font-size:13px}
+    .unit-wrap .unit{position:static; grid-row:2; grid-column:1; align-self:center; justify-self:end; margin-right:10px; transform:none;}
 
     hr{border:none; border-top:1px solid var(--line); margin:16px 0}
     .bar{height:4px; background:linear-gradient(90deg, var(--accent), #39f); border-radius:999px; margin:8px 0 16px}
