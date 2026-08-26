@@ -1,0 +1,128 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Calculadora de NPP — Política de Privacidade e Termos de Uso</title>
+  <style>
+    :root{
+      --fg:#111; --muted:#666; --line:#e6e6e6; --accent:#0b7; --bg:#fff;
+      --font: ui-sans-serif, system-ui, -apple-system, Segoe UI, Roboto, Helvetica, Arial, "Apple Color Emoji","Segoe UI Emoji";
+    }
+    html,body{background:#f5f6f8; color:var(--fg); margin:0;}
+    body{font-family:var(--font); line-height:1.55;}
+    .sheet{max-width:760px; margin:32px auto; background:var(--bg); border-radius:14px; box-shadow:0 10px 30px rgba(0,0,0,.08); padding:32px 40px 48px;}
+    @media (max-width:820px){.sheet{margin:0; border-radius:0; padding:24px 20px 40px;}}
+    h1{font-size:22px; margin:0 0 4px;}
+    h2{font-size:17px; margin:32px 0 10px; padding-top:16px; border-top:1px solid var(--line);}
+    h3{font-size:14px; margin:18px 0 6px;}
+    p, li{font-size:14px; color:#222;}
+    .sub{color:var(--muted); font-size:13px;}
+    .aviso-rascunho{background:#fff8e1; border:1px solid #f0d878; border-radius:10px; padding:12px 16px; font-size:13px; color:#6b5900; margin:18px 0 0;}
+    .placeholder{background:#fbeceb; color:#b3261e; padding:1px 4px; border-radius:4px; font-weight:600;}
+    a{color:var(--accent);}
+    ul{padding-left:20px;}
+    nav{margin:16px 0 0; font-size:13px;}
+    nav a{margin-right:14px;}
+    footer{margin-top:40px; padding-top:16px; border-top:1px solid var(--line); font-size:12px; color:var(--muted);}
+  </style>
+</head>
+<body>
+  <div class="sheet">
+    <h1>Calculadora de NPP</h1>
+    <div class="sub">Política de Privacidade e Termos de Uso — última atualização: 26 de agosto de 2026</div>
+    <nav><a href="#privacidade">Política de Privacidade</a><a href="#termos">Termos de Uso</a></nav>
+
+    <div class="aviso-rascunho">
+      <b>Nota interna (remover antes de publicar):</b> este texto é um rascunho gerado como ponto de partida — cobre os pontos que a spec do projeto (trial, conta via Supabase, assinatura via RevenueCat/Stripe/App Store/Google Play, ausência de dados de paciente) exige mencionar por LGPD e pelas políticas de privacidade da Apple/Google, mas não é aconselhamento jurídico. Recomendo revisão por um advogado antes de linkar isso nas lojas ou dentro do app, e preencher os campos marcados como <span class="placeholder">[PENDENTE]</span>.
+    </div>
+
+    <h2 id="privacidade">Política de Privacidade</h2>
+
+    <h3>Quem somos</h3>
+    <p>A Calculadora de NPP é uma ferramenta de apoio ao cálculo de Nutrição Parenteral (Nutrição Parenteral Total), oferecida por <span class="placeholder">[NOME COMPLETO PENDENTE]</span>, pessoa física (CPF <span class="placeholder">[PENDENTE]</span>), doravante "nós". Para qualquer assunto sobre privacidade ou dados pessoais, o contato é <a href="mailto:felipebarbosamd@gmail.com">felipebarbosamd@gmail.com</a>.</p>
+
+    <h3>Sobre o serviço</h3>
+    <p>A calculadora é uma ferramenta de apoio/referência para cálculo de prescrições de Nutrição Parenteral, destinada a profissionais de saúde já habilitados. Ela <b>não é</b> registrada como Software as a Medical Device (SaMD) junto à ANVISA ou ao FDA, e não substitui o julgamento clínico do profissional prescritor.</p>
+
+    <h3>Dados que coletamos</h3>
+    <ul>
+      <li><b>Dados de conta:</b> e-mail e senha, no momento em que você cria uma conta (a senha nunca fica acessível para nós em texto puro — é gerenciada pelo nosso provedor de autenticação, Supabase).</li>
+      <li><b>Dados de assinatura:</b> status da sua assinatura (ativa/inativa, plano, datas), gerenciado pela RevenueCat. Pagamentos em si são processados diretamente pela Apple (App Store), pelo Google (Play Store) ou pelo Stripe (checkout web) — não temos acesso a números de cartão de crédito.</li>
+      <li><b>Dados de prescrição/paciente:</b> <b>nenhum.</b> O formulário da calculadora (peso, doses, nome do paciente, leito, etc.) roda inteiramente no seu navegador/aparelho e <b>não é salvo nem enviado</b> para nós em nenhum momento — nem durante o uso, nem no "Resumo/Imprimir".</li>
+      <li><b>Preferências locais:</b> guardamos no seu próprio navegador/aparelho (não em nossos servidores) se você já aceitou o aviso legal, e o contador de usos do período gratuito (quando aplicável).</li>
+    </ul>
+
+    <h3>Para que usamos esses dados</h3>
+    <ul>
+      <li>Autenticar você e manter sua conta segura;</li>
+      <li>Reconhecer sua assinatura ativa (a mesma conta libera o acesso no celular e no navegador);</li>
+      <li>Comunicar mudanças importantes no serviço (ex: mudanças nestes Termos, problemas com a cobrança).</li>
+    </ul>
+    <p>Não usamos seus dados para publicidade, não vendemos dados a terceiros, e não fazemos rastreamento/analytics de comportamento dentro do app.</p>
+
+    <h3>Com quem compartilhamos</h3>
+    <p>Usamos os seguintes prestadores de serviço (processadores de dados) para operar a calculadora — cada um recebe apenas o necessário para a função dele:</p>
+    <ul>
+      <li><b>Supabase</b> — autenticação de conta (e-mail/senha);</li>
+      <li><b>RevenueCat</b> — gestão de assinatura, associada ao seu identificador de conta;</li>
+      <li><b>Stripe</b> — processamento de pagamento no checkout web;</li>
+      <li><b>Apple (App Store) / Google (Play Store)</b> — processamento de pagamento nas versões mobile.</li>
+    </ul>
+
+    <h3>Por quanto tempo guardamos</h3>
+    <p>Enquanto sua conta existir. Se você pedir a exclusão da conta, apagamos os dados de conta e assinatura associados, respeitados eventuais prazos legais de guarda de registros fiscais/de pagamento pelos processadores acima (ex: Stripe, lojas de aplicativo).</p>
+
+    <h3>Seus direitos (LGPD)</h3>
+    <p>Você pode, a qualquer momento, solicitar por e-mail (<a href="mailto:felipebarbosamd@gmail.com">felipebarbosamd@gmail.com</a>):</p>
+    <ul>
+      <li>Confirmação de que tratamos seus dados, e acesso a eles;</li>
+      <li>Correção de dados incompletos ou desatualizados;</li>
+      <li>Exclusão da sua conta e dos dados pessoais associados;</li>
+      <li>Informação sobre com quem compartilhamos seus dados (veja a seção acima).</li>
+    </ul>
+
+    <h3>Menores de idade</h3>
+    <p>Este serviço é destinado a profissionais de saúde habilitados e não é direcionado a menores de 18 anos.</p>
+
+    <h3>Alterações nesta política</h3>
+    <p>Podemos atualizar esta política periodicamente. Mudanças relevantes serão comunicadas por e-mail ou dentro do app.</p>
+
+    <h2 id="termos">Termos de Uso</h2>
+
+    <h3>Aceite</h3>
+    <p>Ao criar uma conta ou usar a calculadora, você concorda com estes Termos de Uso e com a Política de Privacidade acima.</p>
+
+    <h3>Quem pode usar</h3>
+    <p>Este serviço é destinado exclusivamente a profissionais de saúde habilitados (ex: médicos, farmacêuticos clínicos) com formação para interpretar, validar e assumir a responsabilidade pelos cálculos gerados. Ao usar a calculadora, você declara possuir essa habilitação profissional.</p>
+
+    <h3>Natureza da ferramenta e isenção de responsabilidade clínica</h3>
+    <p>A calculadora é uma ferramenta de apoio ao cálculo de Nutrição Parenteral e <b>não substitui o raciocínio clínico</b>. A responsabilidade pela prescrição, pelas doses e pela conduta terapêutica é exclusivamente do profissional prescritor que a utiliza. O serviço é fornecido "como está", sem garantia de que os resultados estarão livres de erros — sempre confira os valores calculados antes de aplicá-los.</p>
+
+    <h3>Período gratuito e assinatura</h3>
+    <ul>
+      <li>O aplicativo mobile oferece um período gratuito de 3 prescrições antes de exigir assinatura;</li>
+      <li>Após o período gratuito (ou no acesso via navegador, que não tem período gratuito), o uso requer uma assinatura paga, nos planos Mensal ou Anual, com os preços exibidos no momento da contratação;</li>
+      <li>A assinatura renova automaticamente até ser cancelada. O cancelamento é feito pelo canal onde a assinatura foi contratada: App Store, Google Play, ou portal de gerenciamento do Stripe (para assinaturas via navegador);</li>
+      <li>Não fazemos reembolso proporcional por cancelamento no meio do período pago, exceto quando exigido por lei ou pela política da respectiva loja.</li>
+    </ul>
+
+    <h3>Sua conta</h3>
+    <p>Você é responsável por manter a confidencialidade da sua senha e por toda atividade realizada na sua conta. Avise-nos imediatamente em caso de uso não autorizado.</p>
+
+    <h3>Limitação de responsabilidade</h3>
+    <p>Na máxima extensão permitida por lei, não nos responsabilizamos por decisões clínicas tomadas com base nos resultados da calculadora, nem por indisponibilidade temporária do serviço.</p>
+
+    <h3>Alterações nestes termos</h3>
+    <p>Podemos atualizar estes Termos periodicamente. O uso continuado do serviço após uma atualização implica concordância com os novos termos.</p>
+
+    <h3>Lei aplicável</h3>
+    <p>Estes Termos são regidos pelas leis da República Federativa do Brasil.</p>
+
+    <h3>Contato</h3>
+    <p>Dúvidas sobre estes Termos ou sobre a Política de Privacidade: <a href="mailto:felipebarbosamd@gmail.com">felipebarbosamd@gmail.com</a>.</p>
+
+    <footer>Calculadora de NPP — ferramenta de apoio à decisão clínica, sem registro como dispositivo médico (SaMD) na ANVISA/FDA.</footer>
+  </div>
+</body>
+</html>

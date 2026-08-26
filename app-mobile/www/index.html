@@ -76,6 +76,17 @@
     #btnPlanoMensal, #btnPlanoAnual{
       overflow-wrap:break-word; min-width:0; max-width:100%;
     }
+    .link-btn{
+      background:none; border:none; padding:0; margin:8px 0 0; display:block;
+      color:var(--accent); text-decoration:underline; font-size:12px; cursor:pointer;
+    }
+    /* z-index maior que o dos overlays (9999) — de propósito: "Sair" precisa
+       continuar clicável mesmo com o paywall/login por cima, senão fica
+       impossível trocar de conta quando ela é a errada. */
+    #accountBar{
+      position:fixed; top:14px; right:16px; z-index:10000;
+      background:var(--surface); padding:6px 12px; border-radius:8px; box-shadow:0 4px 12px rgba(20,30,30,.15);
+    }
     button:hover{background:var(--accent-strong);}
     button:active{transform:translateY(1px);}
     button.secondary{background:var(--surface); color:var(--fg); border:1px solid var(--line);}
@@ -143,6 +154,9 @@
     <header>
       <h1>Prescrição de Nutrição Parenteral (NPP)</h1>
       <div class="sub">Layout de prescrição hospitalar — versão 0.5.8</div>
+      <div id="accountBar" class="sub" style="display:none">
+        <span id="accountEmail"></span> · <button type="button" id="btnLogout" class="link-btn" style="display:inline; margin:0">Sair</button>
+      </div>
       <div class="bar" aria-hidden="true"></div>
 
       <!-- Cabeçalho -->
@@ -532,6 +546,8 @@
           <input id="authPassword" type="password" placeholder="mínimo 6 caracteres" />
         </div>
       </div>
+      <button type="button" id="btnAuthForgot" class="link-btn" style="display:none">Esqueci minha senha</button>
+      <div id="authInfo" class="sub" style="display:none"></div>
       <div id="authError" class="sub" style="color:var(--danger); display:none"></div>
       <div class="resumo-actions">
         <button type="button" class="secondary" id="btnAuthToggle">Já tenho conta</button>
@@ -931,18 +947,52 @@
     const authEmail = document.getElementById('authEmail');
     const authPassword = document.getElementById('authPassword');
     const authError = document.getElementById('authError');
+    const authInfo = document.getElementById('authInfo');
     const authTitulo = document.getElementById('authTitulo');
     const btnAuthSubmit = document.getElementById('btnAuthSubmit');
     const btnAuthToggle = document.getElementById('btnAuthToggle');
+    const btnAuthForgot = document.getElementById('btnAuthForgot');
     let authMode = 'signup';
 
+    function hideAuthMessages() {
+      authError.style.display = 'none';
+      authInfo.style.display = 'none';
+    }
     function setAuthMode(mode) {
       authMode = mode;
       authTitulo.textContent = mode === 'signup' ? 'Criar conta' : 'Entrar';
       btnAuthSubmit.textContent = mode === 'signup' ? 'Criar conta' : 'Entrar';
       btnAuthToggle.textContent = mode === 'signup' ? 'Já tenho conta' : 'Criar conta nova';
-      authError.style.display = 'none';
+      btnAuthForgot.style.display = mode === 'login' ? 'block' : 'none';
+      hideAuthMessages();
     }
+    // A troca de senha em si acontece no app-web (tem URL de verdade pra
+    // redirect de e-mail — o app mobile é um WebView sem esse endereço), só
+    // dispara o envio do e-mail daqui. Mesma conta Supabase dos dois lados.
+    btnAuthForgot.addEventListener('click', async () => {
+      hideAuthMessages();
+      if (!supabaseClient) {
+        authError.textContent = 'Sem conexão — tente novamente mais tarde.';
+        authError.style.display = 'block';
+        return;
+      }
+      const email = authEmail.value.trim();
+      if (!email) {
+        authError.textContent = 'Digite seu e-mail acima primeiro.';
+        authError.style.display = 'block';
+        return;
+      }
+      const { error } = await supabaseClient.auth.resetPasswordForEmail(email, {
+        redirectTo: 'https://barbsfelipe.github.io/npp-calculator/app-web/',
+      });
+      if (error) {
+        authError.textContent = error.message;
+        authError.style.display = 'block';
+        return;
+      }
+      authInfo.textContent = 'Enviamos um link pro seu e-mail. Abra-o no navegador do celular ou do computador para definir uma nova senha — depois volte aqui e entre com ela.';
+      authInfo.style.display = 'block';
+    });
     btnAuthToggle.addEventListener('click', () => {
       const nextMode = authMode === 'signup' ? 'login' : 'signup';
       if (nextMode === 'login') selectedPlan = null; // trocou pra "já tenho conta", não confirma compra do plano
@@ -955,6 +1005,26 @@
       return data.session;
     }
 
+    // ===== Conta logada (barra "Sair") =====
+    const accountBar = document.getElementById('accountBar');
+    const accountEmail = document.getElementById('accountEmail');
+    const btnLogout = document.getElementById('btnLogout');
+    async function updateAccountBar() {
+      const session = await getCurrentSession().catch(() => null);
+      if (session) {
+        accountEmail.textContent = session.user.email || '';
+        accountBar.style.display = 'block';
+      } else {
+        accountBar.style.display = 'none';
+      }
+    }
+    btnLogout.addEventListener('click', async () => {
+      if (supabaseClient) {
+        try { await supabaseClient.auth.signOut(); } catch (e) { console.warn('Erro ao sair:', e); }
+      }
+      window.location.reload(); // mais simples e seguro que zerar cada variável de estado (purchasesConfigured etc.) na mão
+    });
+
     const paywallStatus = document.getElementById('paywallStatus');
     function showPaywallStatus(text) {
       paywallStatus.textContent = text;
@@ -965,7 +1035,7 @@
     }
 
     btnAuthSubmit.addEventListener('click', async () => {
-      authError.style.display = 'none';
+      hideAuthMessages();
       if (!supabaseClient) {
         authError.textContent = 'Sem conexão — não é possível criar conta/entrar agora. Tente novamente mais tarde.';
         authError.style.display = 'block';
@@ -987,6 +1057,7 @@
         return;
       }
       overlayAuth.style.display = 'none';
+      await updateAccountBar();
       try {
         await revenueCatLogIn(data.session.user.id);
         // Confere assinatura já existente antes de tentar comprar de novo —
@@ -994,6 +1065,8 @@
         // (ex: reinstalou o app e escolheu "Já tenho conta").
         if (await window.hasActiveSubscription()) {
           overlayPaywall.style.display = 'none';
+        } else if (!isNativePlatform() || !purchasesConfigured) {
+          showPaywallStatus('Conta criada! Assinatura indisponível nesta plataforma no momento — tente de novo mais tarde.');
         } else {
           await purchaseSelectedPlan();
         }
@@ -1056,7 +1129,10 @@
       overlayPaywall.style.display = 'none';
     }
     document.getElementById('btnRestaurarCompra').addEventListener('click', async () => {
-      if (!isNativePlatform() || !purchasesConfigured) return;
+      if (!isNativePlatform() || !purchasesConfigured) {
+        showPaywallStatus('Assinatura indisponível nesta plataforma no momento.');
+        return;
+      }
       hidePaywallStatus();
       try {
         await purchasesPlugin().restorePurchases();
@@ -1140,6 +1216,11 @@
 
     (async function init(){
       updatePUI();
+      try {
+        await updateAccountBar();
+      } catch (e) {
+        console.warn('Falha ao checar sessão do Supabase na abertura do app:', e);
+      }
       try {
         await configurePurchases();
       } catch (e) {

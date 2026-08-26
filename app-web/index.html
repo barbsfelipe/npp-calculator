@@ -69,6 +69,17 @@
     #btnPlanoMensal, #btnPlanoAnual{
       overflow-wrap:break-word; min-width:0; max-width:100%;
     }
+    .link-btn{
+      background:none; border:none; padding:0; margin:8px 0 0; display:block;
+      color:var(--accent); text-decoration:underline; font-size:12px; cursor:pointer;
+    }
+    /* z-index maior que o dos overlays (9999) — de propósito: "Sair" precisa
+       continuar clicável mesmo com o paywall/login por cima, senão fica
+       impossível trocar de conta quando ela é a errada. */
+    #accountBar{
+      position:fixed; top:14px; right:16px; z-index:10000;
+      background:#fff; padding:6px 12px; border-radius:8px; box-shadow:0 4px 12px rgba(0,0,0,.15);
+    }
     button.secondary{background:#e9eef2; color:#222}
 
     .output-negative{color:#b00020; font-weight:600}
@@ -135,6 +146,9 @@
     <header>
       <h1>Prescrição de Nutrição Parenteral (NPP)</h1>
       <div class="sub">Layout de prescrição hospitalar — versão 0.5.4</div>
+      <div id="accountBar" class="sub" style="display:none">
+        <span id="accountEmail"></span> · <button type="button" id="btnLogout" class="link-btn" style="display:inline; margin:0">Sair</button>
+      </div>
       <div class="bar" aria-hidden="true"></div>
 
       <!-- Cabeçalho -->
@@ -492,7 +506,7 @@
     <div id="authCard">
       <h2 id="authTitulo">Entrar</h2>
       <p class="sub">Use a mesma conta do app do celular — a assinatura vale para os dois.</p>
-      <div class="grid row">
+      <div class="grid row" id="authEmailRow">
         <div class="field span-12">
           <label for="authEmail">E-mail</label>
           <input id="authEmail" type="email" placeholder="voce@exemplo.com" />
@@ -500,10 +514,12 @@
       </div>
       <div class="grid row">
         <div class="field span-12">
-          <label for="authPassword">Senha</label>
+          <label for="authPassword" id="authPasswordLabel">Senha</label>
           <input id="authPassword" type="password" placeholder="mínimo 6 caracteres" />
         </div>
       </div>
+      <button type="button" id="btnAuthForgot" class="link-btn">Esqueci minha senha</button>
+      <div id="authInfo" class="sub" style="display:none"></div>
       <div id="authError" class="sub" style="color:var(--danger); display:none"></div>
       <div class="resumo-actions">
         <button type="button" class="secondary" id="btnAuthToggle">Criar conta nova</button>
@@ -901,27 +917,81 @@
       console.warn('Erro ao inicializar o Supabase:', e);
     }
     const overlayAuth = document.getElementById('overlayAuth');
+    const authEmailRow = document.getElementById('authEmailRow');
     const authEmail = document.getElementById('authEmail');
     const authPassword = document.getElementById('authPassword');
+    const authPasswordLabel = document.getElementById('authPasswordLabel');
     const authError = document.getElementById('authError');
+    const authInfo = document.getElementById('authInfo');
     const authTitulo = document.getElementById('authTitulo');
     const btnAuthSubmit = document.getElementById('btnAuthSubmit');
     const btnAuthToggle = document.getElementById('btnAuthToggle');
+    const btnAuthForgot = document.getElementById('btnAuthForgot');
     // Na web (diferente do celular) não existe trial — todo mundo passa pelo
     // login primeiro, então o padrão é 'login' (quem já assina no celular só
-    // quer entrar); "Criar conta nova" alterna pra signup.
+    // quer entrar); "Criar conta nova" alterna pra signup. 'reset' é o modo
+    // especial de "definir nova senha", só alcançado via link de e-mail de
+    // recuperação (evento PASSWORD_RECOVERY do Supabase, mais abaixo).
     let authMode = 'login';
 
+    function hideAuthMessages() {
+      authError.style.display = 'none';
+      authInfo.style.display = 'none';
+    }
     function setAuthMode(mode) {
       authMode = mode;
-      authTitulo.textContent = mode === 'signup' ? 'Criar conta' : 'Entrar';
-      btnAuthSubmit.textContent = mode === 'signup' ? 'Criar conta' : 'Entrar';
+      authTitulo.textContent = mode === 'signup' ? 'Criar conta' : (mode === 'reset' ? 'Nova senha' : 'Entrar');
+      authPasswordLabel.textContent = mode === 'reset' ? 'Nova senha' : 'Senha';
+      btnAuthSubmit.textContent = mode === 'signup' ? 'Criar conta' : (mode === 'reset' ? 'Salvar nova senha' : 'Entrar');
       btnAuthToggle.textContent = mode === 'signup' ? 'Já tenho conta' : 'Criar conta nova';
-      authError.style.display = 'none';
+      authEmailRow.style.display = mode === 'reset' ? 'none' : 'grid';
+      btnAuthToggle.style.display = mode === 'reset' ? 'none' : 'inline-block';
+      btnAuthForgot.style.display = mode === 'login' ? 'block' : 'none';
+      hideAuthMessages();
     }
     btnAuthToggle.addEventListener('click', () => {
       setAuthMode(authMode === 'signup' ? 'login' : 'signup');
     });
+    btnAuthForgot.addEventListener('click', async () => {
+      hideAuthMessages();
+      if (!supabaseClient) {
+        authError.textContent = 'Sem conexão — tente novamente mais tarde.';
+        authError.style.display = 'block';
+        return;
+      }
+      const email = authEmail.value.trim();
+      if (!email) {
+        authError.textContent = 'Digite seu e-mail acima primeiro.';
+        authError.style.display = 'block';
+        return;
+      }
+      const { error } = await supabaseClient.auth.resetPasswordForEmail(email, {
+        redirectTo: window.location.origin + window.location.pathname,
+      });
+      if (error) {
+        authError.textContent = error.message;
+        authError.style.display = 'block';
+        return;
+      }
+      authInfo.textContent = 'Enviamos um link pro seu e-mail. Abra-o para definir uma nova senha.';
+      authInfo.style.display = 'block';
+    });
+
+    // O link do e-mail de recuperação abre esta mesma página com um token
+    // de recuperação na URL; o SDK do Supabase detecta isso sozinho
+    // (detectSessionInUrl, ligado por padrão) e dispara esse evento — não é
+    // um login normal, então força o modo "definir nova senha" por cima de
+    // qualquer outro overlay que já estivesse decidindo o que mostrar.
+    if (supabaseClient) {
+      supabaseClient.auth.onAuthStateChange((event) => {
+        if (event === 'PASSWORD_RECOVERY') {
+          overlayPaywall.style.display = 'none';
+          overlayDisclaimer.style.display = 'none';
+          setAuthMode('reset');
+          overlayAuth.style.display = 'flex';
+        }
+      });
+    }
 
     async function getCurrentSession() {
       if (!supabaseClient) return null;
@@ -939,10 +1009,24 @@
     }
 
     btnAuthSubmit.addEventListener('click', async () => {
-      authError.style.display = 'none';
+      hideAuthMessages();
       if (!supabaseClient) {
         authError.textContent = 'Sem conexão — não é possível criar conta/entrar agora. Tente novamente mais tarde.';
         authError.style.display = 'block';
+        return;
+      }
+      // Modo especial: veio de um link de recuperação de senha (evento
+      // PASSWORD_RECOVERY, registrado mais abaixo) — a sessão já existe,
+      // só falta trocar a senha, não é login/cadastro de novo.
+      if (authMode === 'reset') {
+        const { error } = await supabaseClient.auth.updateUser({ password: authPassword.value });
+        if (error) {
+          authError.textContent = error.message;
+          authError.style.display = 'block';
+          return;
+        }
+        overlayAuth.style.display = 'none';
+        await checkAccess();
         return;
       }
       const email = authEmail.value.trim();
@@ -1046,6 +1130,15 @@
 
     // ===== Gate de acesso (login + assinatura) =====
     const overlayPaywall = document.getElementById('overlayPaywall');
+    const accountBar = document.getElementById('accountBar');
+    const accountEmail = document.getElementById('accountEmail');
+    const btnLogout = document.getElementById('btnLogout');
+    btnLogout.addEventListener('click', async () => {
+      if (supabaseClient) {
+        try { await supabaseClient.auth.signOut(); } catch (e) { console.warn('Erro ao sair:', e); }
+      }
+      window.location.reload(); // mais simples e seguro que zerar cada variável de estado (purchasesConfigured etc.) na mão
+    });
     // Confere sessão + assinatura e mostra o overlay certo (login ou
     // paywall). Só retorna true quando o app pode ser liberado — o aviso
     // legal ainda entra depois disso, se for a 1ª vez.
@@ -1055,11 +1148,14 @@
         return null;
       });
       if (!session) {
+        accountBar.style.display = 'none';
         overlayPaywall.style.display = 'none';
         overlayAuth.style.display = 'flex';
         return false;
       }
       overlayAuth.style.display = 'none';
+      accountEmail.textContent = session.user.email || '';
+      accountBar.style.display = 'block';
       try {
         await configurePurchases(session.user.id);
       } catch (e) {
