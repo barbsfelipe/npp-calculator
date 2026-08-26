@@ -29,7 +29,7 @@ Público-alvo: profissionais de saúde individuais (compra pessoal, B2C) — nã
 - **Trial gratuito de uso** (não por tempo): 3 prescrições grátis sem precisar de conta — conta a tela inicial (1ª prescrição, já aberta ao instalar) mais cada clique em "Limpar/Nova". Contador local no aparelho (`@capacitor/preferences`), sem servidor — reinstalar o app reseta o trial (limitação aceita, ver Arquitetura técnica).
 - Na 4ª tentativa de prescrição nova, o formulário não abre — mostra direto a tela de assinatura (paywall) em vez de bloquear campos.
 - Sistema de conta (login/senha) via Supabase Auth, compartilhado entre mobile e web — criado no momento da assinatura (não antes, durante o trial).
-- **Duas opções de assinatura** — mensal (R$49,90) e anual (R$298,80 = R$24,90/mês, ~50% de desconto) — que liberam acesso em mobile e web pela mesma conta, via RevenueCat (App Store, Google Play e RevenueCat Web Billing para o checkout web).
+- **Duas opções de assinatura** — mensal (R$9,90) e anual (R$79,90 = R$6,66/mês, ~33% de desconto) — que liberam acesso em mobile e web pela mesma conta, via RevenueCat (App Store, Google Play e RevenueCat Web Billing para o checkout web).
 - Tela de consentimento/aviso legal no primeiro uso (ferramenta de apoio à decisão clínica, não substitui julgamento clínico, uso por profissional habilitado).
 - Botão "Restaurar compra" nos apps mobile.
 - Novo ícone (ver seção Identidade Visual).
@@ -87,7 +87,7 @@ Passos técnicos de geração de asset (implementação):
    - Assinante ativo (conta já criada e logada) → abre a calculadora direto, sem checar trial.
    - Sem assinatura → checa o contador de trial local:
      - `trialUsageCount < 3` → abre a calculadora normalmente, incrementa o contador.
-     - `trialUsageCount >= 3` → paywall: "Assinar por R$49,90/mês ou R$298,80/ano" + botão "Já tenho conta" (login) + botão "Restaurar compra".
+     - `trialUsageCount >= 3` → paywall: "Assinar por R$9,90/mês ou R$79,90/ano" + botão "Já tenho conta" (login) + botão "Restaurar compra".
 4. Ao escolher um plano no paywall: tela de criar conta (Supabase Auth, e-mail/senha) → checkout (App Store/Google Play) → conta logada e assinatura ativa liberam a calculadora.
 
 ### Fluxo do app (web, Plano 3 — ainda não implementado)
@@ -103,7 +103,7 @@ Mesma lógica de checagem de assinatura via RevenueCat (login obrigatório na we
 
 - **Apple Developer Program**: inscrição pessoa física (CPF), US$99/ano.
 - **Google Play Console**: cadastro pessoa física (CPF), US$25 taxa única. Contas pessoais novas são obrigadas a rodar teste fechado com **mínimo 12 testers ativos por 14 dias corridos** antes de liberar produção — precisa ser planejado com antecedência (recrutar colegas como testers).
-- Dois produtos de assinatura (mensal R$49,90 e anual R$298,80) cadastrados em App Store Connect e Play Console.
+- Dois produtos de assinatura (mensal R$9,90 e anual R$79,90) cadastrados em App Store Connect e Play Console.
 - Política de Privacidade + Termos de Uso hospedados em página própria (GitHub Pages), linkados nas lojas e dentro do app.
 - Postura regulatória: calculadora permanece como ferramenta de apoio/referência para profissional já habilitado — **sem** registro como Software as a Medical Device (SaMD) na ANVISA/FDA.
 - Notas para o revisor da Apple: o app tem trial de uso gratuito (3 prescrições) antes do paywall — o revisor consegue testar a calculadora normalmente sem precisar de conta. Se pedir para verificar o fluxo pós-assinatura, disponibilizar conta de teste com assinatura ativa.
@@ -130,7 +130,7 @@ A PWA atual já está em uso (inclusive pelo próprio usuário e possivelmente c
 | Tema | Decisão |
 |---|---|
 | Público-alvo | Profissional individual (B2C) |
-| Monetização | Trial gratuito de 3 prescrições (contador local, sem conta) → assinatura mensal (R$49,90) ou anual (R$298,80) |
+| Monetização | Trial gratuito de 3 prescrições (contador local, sem conta) → assinatura mensal (R$9,90) ou anual (R$79,90) |
 | Contas de desenvolvedor | Pessoa física (CPF), ainda não criadas |
 | Abordagem técnica mobile | Capacitor (reaproveita HTML/JS existente) |
 | Postura regulatória | Ferramenta de apoio/referência, sem registro SaMD |

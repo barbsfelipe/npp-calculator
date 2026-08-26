@@ -18,7 +18,7 @@
       --danger:#b3261e;--danger-soft:#fbeceb;
       --font: ui-sans-serif, system-ui, -apple-system, Segoe UI, Roboto, Helvetica, Arial, "Apple Color Emoji","Segoe UI Emoji";
     }
-    html,body{height:100%;background:#f5f6f8;color:var(--fg);}
+    html,body{height:100%;background:#f5f6f8;color:var(--fg); -webkit-text-size-adjust:100%; text-size-adjust:100%;}
     body{margin:0;font-family:var(--font);} 
     .sheet{width:210mm; min-height:297mm; margin:24px auto; background:var(--bg); box-shadow:0 10px 30px rgba(0,0,0,.08); padding:20mm;}
     @media (max-width:940px){.sheet{width:auto; min-height:auto; margin:0; box-shadow:none; padding:16px;}}
@@ -28,7 +28,7 @@
     .sub{color:var(--muted); font-size:12px;}
 
     .grid{display:grid; grid-template-columns:repeat(12, minmax(0, 1fr)); gap:var(--gap);} 
-    .field{display:flex; flex-direction:column; gap:6px;}
+    .field{display:flex; flex-direction:column; gap:6px; min-width:0;}
     label{font-size:11px; letter-spacing:.02em; color:#333}
     input, select{border:1px solid var(--line); border-radius:8px; padding:10px 12px; font-size:14px; background:#fff;}
     input[readonly]{background:#eaf4ff; border:1px solid #bcd4f6; color:#003366; font-weight:600}
@@ -59,7 +59,16 @@
     .section-title{font-size:14px; font-weight:600; margin:18px 0 8px}
     
     .actions{margin-top:16px; display:flex; gap:10px; flex-wrap:wrap}
-    button{border:none; background:var(--accent); color:white; padding:10px 14px; border-radius:10px; font-size:14px; cursor:pointer}
+    button{border:none; background:var(--accent); color:white; padding:10px 14px; border-radius:10px; font-size:14px; cursor:pointer; white-space:normal; line-height:1.3;}
+    /* Só os botões de plano do paywall têm texto longo o bastante (com
+       tokens sem espaço tipo "R$79,90/ano") pra precisar desse reforço —
+       aplicar isso a todo botão fazia botões curtos numa fileira flex
+       (ex: "Entrar") encolherem e quebrarem no meio da palavra à toa.
+       Mesmo bug/fix de app-mobile/www/index.html (só reproduz em WebKit
+       de dispositivo real, não em desktop nem headless). */
+    #btnPlanoMensal, #btnPlanoAnual{
+      overflow-wrap:break-word; min-width:0; max-width:100%;
+    }
     button.secondary{background:#e9eef2; color:#222}
 
     .output-negative{color:#b00020; font-weight:600}
@@ -511,10 +520,10 @@
       <div id="paywallStatus" class="sub" style="color:var(--danger); display:none"></div>
       <div class="grid row">
         <div class="field span-6">
-          <button type="button" id="btnPlanoMensal" style="width:100%">Mensal — R$49,90/mês</button>
+          <button type="button" id="btnPlanoMensal" style="width:100%">Mensal — R$9,90/mês</button>
         </div>
         <div class="field span-6">
-          <button type="button" id="btnPlanoAnual" style="width:100%">Anual — R$298,80/ano (R$24,90/mês)</button>
+          <button type="button" id="btnPlanoAnual" style="width:100%">Anual — R$79,90/ano (R$6,66/mês)</button>
         </div>
       </div>
       <div class="resumo-actions">
