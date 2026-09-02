@@ -209,6 +209,14 @@
           <input id="volAA" type="text" placeholder="—" readonly />
           <span class="unit" aria-hidden="true">ml</span>
         </div>
+        <div class="field span-12">
+          <label for="srcLIPSelect">Lipídeos — fonte</label>
+          <select id="srcLIPSelect">
+            <option value="intralipid" selected>Lipídeos 20% (Intralipid)</option>
+            <option value="smof">SMOFlipid 20%</option>
+          </select>
+          <small class="notice">Mesma concentração (200 mg/mL) e valor calórico (2 kcal/mL) — a escolha só muda o nome exibido no resumo/impressão.</small>
+        </div>
         <div class="field span-3 unit-wrap">
           <label for="doseLIP">Lipídeos 20% (dose)</label>
           <input id="doseLIP" type="text" placeholder="0,00" inputmode="decimal" />
@@ -281,10 +289,17 @@
           <span class="unit" aria-hidden="true">ml</span>
         </div>
         <!-- Linha de aviso do Mg removida -->
+        <div class="field span-12">
+          <label for="srcCaUnitSelect">Cálcio — unidade da dose</label>
+          <select id="srcCaUnitSelect">
+            <option value="meq" selected>mEq/kg/dia</option>
+            <option value="ml">mL/kg/dia</option>
+          </select>
+        </div>
         <div class="field span-3 unit-wrap">
           <label for="doseCaGlu10">Gluconato de cálcio 10% (dose)</label>
           <input id="doseCaGlu10" type="text" placeholder="0,0" inputmode="decimal" />
-          <span class="unit" aria-hidden="true">mEq/kg/dia</span>
+          <span class="unit" id="unitCaGlu10" aria-hidden="true">mEq/kg/dia</span>
         </div>
         <div class="field span-3 unit-wrap">
           <label for="volCaGlu10">Gluconato de cálcio 10% (auto)</label>
@@ -300,10 +315,17 @@
           </select>
           <small class="notice">Ambos contêm ≈ <b>31 mg de P/mL</b>.</small>
         </div>
+        <div class="field span-12" id="wrapUnitP" style="display:none">
+          <label for="srcPUnitSelect">Fósforo — unidade da dose</label>
+          <select id="srcPUnitSelect">
+            <option value="mg" selected>mg/kg/dia</option>
+            <option value="mmol">mmol/kg/dia</option>
+          </select>
+        </div>
         <div class="field span-3 unit-wrap" id="wrapDoseP" style="display:none">
           <label for="dosePmgkg">Fósforo — dose</label>
           <input id="dosePmgkg" type="text" placeholder="0" inputmode="numeric" />
-          <span class="unit" aria-hidden="true">mg/kg/dia</span>
+          <span class="unit" id="unitDoseP" aria-hidden="true">mg/kg/dia</span>
         </div>
         <div class="field span-3 unit-wrap" id="wrapVolP" style="display:none">
           <label for="volP">Fósforo — volume (auto)</label>
@@ -522,6 +544,7 @@
     // Macros
     const doseH2O = document.getElementById('doseH2O'), volH2O = document.getElementById('volH2O');
     const doseAA = document.getElementById('doseAA'), volAA = document.getElementById('volAA');
+    const srcLIPSelect = document.getElementById('srcLIPSelect');
     const doseLIP = document.getElementById('doseLIP'), volLIP = document.getElementById('volLIP');
     const doseG50 = document.getElementById('doseG50'), volG50 = document.getElementById('volG50');
 
@@ -531,11 +554,16 @@
     const srcKClSelect = document.getElementById('srcKClSelect');
     const doseKCl10 = document.getElementById('doseKCl10'), volKCl10 = document.getElementById('volKCl10');
     const doseMg10 = document.getElementById('doseMg10'), volMg10 = document.getElementById('volMg10');
+    const srcCaUnitSelect = document.getElementById('srcCaUnitSelect');
     const doseCaGlu10 = document.getElementById('doseCaGlu10'), volCaGlu10 = document.getElementById('volCaGlu10');
+    const unitCaGlu10 = document.getElementById('unitCaGlu10');
 
     // Fósforo
     const srcPSelect = document.getElementById('srcPSelect');
+    const srcPUnitSelect = document.getElementById('srcPUnitSelect');
+    const wrapUnitP = document.getElementById('wrapUnitP');
     const dosePmgkg = document.getElementById('dosePmgkg');
+    const unitDoseP = document.getElementById('unitDoseP');
     const wrapDoseP = document.getElementById('wrapDoseP');
     const wrapVolP = document.getElementById('wrapVolP');
     const volP = document.getElementById('volP');
@@ -587,6 +615,11 @@
 
     // ===== Cálculos =====
     const FACT_NACL10=1.7, FACT_NACL20=3.4, FACT_KCL10=1.34, FACT_KCL191=2.56, FACT_MG10=0.8, FACT_CAGLU10=0.5, FACT_MVI=2, FACT_ZN=230, FACT_SE=60, FACT_GLN=0.2, MG_PER_ML_P=31;
+    // Peso atômico do fósforo (~30,97 g/mol) arredondado — mg por mmol de P
+    // elementar. Coincide numericamente com MG_PER_ML_P (31 mg de P por mL
+    // das soluções de glicerofosfato/fosfato de K), mas são grandezas
+    // diferentes (uma é concentração do fármaco, a outra é estequiometria).
+    const MG_PER_MMOL_P = 31;
     const MEQ_PER_ML_NA_GLY = 2, MEQ_PER_ML_K_PHOS = 2;
     const LIMIAR_AVISO_PESO = 30, LIMIAR_BLOQUEIO_PESO = 40;
     const doseFieldIds = ['doseH2O','doseAA','doseLIP','doseG50','doseNaCl10','doseKCl10','doseMg10','doseCaGlu10','dosePmgkg','doseSe','doseZn','doseTE','doseGln'];
@@ -609,6 +642,7 @@
 
     function updatePUI(){
       const chosen = srcPSelect.value !== '';
+      wrapUnitP.style.display = chosen ? '' : 'none';
       wrapDoseP.style.display = chosen ? '' : 'none';
       wrapVolP.style.display = chosen ? '' : 'none';
       if(!chosen){
@@ -647,12 +681,24 @@
       const kFactor = srcKClSelect.value === '191' ? FACT_KCL191 : FACT_KCL10;
       const dK=parseNumberBR(doseKCl10.value); const KVol=(Number.isFinite(dK)&&Number.isFinite(PC))?(PC*dK)/kFactor:NaN; volKCl10.value=Number.isFinite(KVol)?formatML(KVol):'';
       const dMg=parseNumberBR(doseMg10.value); const MgVol=Number.isFinite(dMg)?(P*dMg)/FACT_MG10:NaN; volMg10.value=Number.isFinite(MgVol)?formatML(MgVol):'';
-      const dCa=parseNumberBR(doseCaGlu10.value); const CaVol=Number.isFinite(dCa)?(P*dCa)/FACT_CAGLU10:NaN; volCaGlu10.value=Number.isFinite(CaVol)?formatML(CaVol):'';
+      // Cálcio: dose pode ser em mEq/kg/dia (padrão, usa FACT_CAGLU10 pra
+      // converter em mL) ou em mL/kg/dia (direto, sem fator — quem prescreve
+      // já pensa em volume). mEqCa é recalculado mais abaixo a partir do
+      // volume nos dois casos, pra alimentar Ca:P e cátions divalentes.
+      const caUnitML = srcCaUnitSelect.value === 'ml';
+      const dCa=parseNumberBR(doseCaGlu10.value);
+      const CaVol = Number.isFinite(dCa) ? (caUnitML ? (P*dCa) : (P*dCa)/FACT_CAGLU10) : NaN;
+      volCaGlu10.value=Number.isFinite(CaVol)?formatML(CaVol):'';
 
       // Fósforo
+      // Fósforo: dose pode ser em mg/kg/dia (padrão) ou mmol/kg/dia (1 mmol
+      // de P ≈ 31 mg, mesmo fator já usado pro mg/mL da solução — bula do
+      // Glycophos recomenda mmol em vez de mEq pra fósforo, por ser
+      // polivalente, então essa é a unidade alternativa oferecida).
       let PVol=NaN, mgP=NaN;
       if(srcPSelect.value){
-        const dPmg=parseNumberBR(dosePmgkg.value);
+        const dPRaw=parseNumberBR(dosePmgkg.value);
+        const dPmg = Number.isFinite(dPRaw) ? (srcPUnitSelect.value === 'mmol' ? dPRaw*MG_PER_MMOL_P : dPRaw) : NaN;
         const mgTotalP=Number.isFinite(dPmg)?dPmg*P:NaN;
         PVol=Number.isFinite(mgTotalP)?(mgTotalP/MG_PER_ML_P):NaN;
         mgP = Number.isFinite(PVol) ? (PVol*MG_PER_ML_P) : NaN;
@@ -688,7 +734,7 @@
       aporteKcalKg.value = Number.isFinite(aporte) ? f1(aporte) : '';
 
       // mEq Ca e Mg
-      const mEqCa = Number.isFinite(dCa) ? (P*dCa) : 0;
+      const mEqCa = caUnitML ? (Number.isFinite(CaVol) ? (CaVol*FACT_CAGLU10) : 0) : (Number.isFinite(dCa) ? (P*dCa) : 0);
       const mEqMg = Number.isFinite(dMg) ? (P*dMg) : 0;
 
       // Cátions divalentes (mEq/L) = (mEq Ca + mEq Mg) * 1000 / Vtotal_mL
@@ -714,11 +760,14 @@
       const conc = (Vtotal_mL>0) ? ((gGLU / Vtotal_mL) * 100) : NaN;
       concSolucao.value = Number.isFinite(conc) ? f1(conc) : '';
 
-      // Relação Ca:P (mg:mg) -> mostrar como X : 1
+      // Relação Ca:P (mg:mg) -> mostrar sempre como 1 : X (Cálcio fixo em 1,
+      // Fósforo relativo a ele — antes ficava "X : 1" fixando o Fósforo em 1,
+      // então uma razão Ca<P (ex.: 0,67) aparecia com o primeiro número
+      // diferente de 1, que é o formato pedido).
       const mgCa = mEqCa * 20; // 1 mEq Ca ≈ 20 mg
       const mgP_for_ratio = Number.isFinite(PVol) ? (PVol*31) : NaN;
-      const ratioCaP = (Number.isFinite(mgP_for_ratio) && mgP_for_ratio>0) ? (mgCa/mgP_for_ratio) : NaN;
-      relCaP.value = Number.isFinite(ratioCaP) ? (f2(ratioCaP) + ' : 1') : '';
+      const ratioPCa = (Number.isFinite(mgP_for_ratio) && Number.isFinite(mgCa) && mgCa>0) ? (mgP_for_ratio/mgCa) : NaN;
+      relCaP.value = Number.isFinite(ratioPCa) ? ('1 : ' + f2(ratioPCa)) : '';
 
       // Osmolaridade estimada
       const A_g_L = (V_L>0) ? (gAA / V_L) : NaN;
@@ -740,13 +789,27 @@
     pesoEl.addEventListener('input', () => { atualizarPesoCalorico(); calcVolumes(); });
     addListeners([doseH2O, doseAA, doseLIP, doseG50, doseNaCl10, doseKCl10, doseMg10, doseCaGlu10, dosePmgkg, doseSe, doseZn, doseTE, doseGln]);
     srcPSelect.addEventListener('change', () => { updatePUI(); calcVolumes(); });
+    srcPUnitSelect.addEventListener('change', () => {
+      const isMmol = srcPUnitSelect.value === 'mmol';
+      unitDoseP.textContent = isMmol ? 'mmol/kg/dia' : 'mg/kg/dia';
+      dosePmgkg.inputMode = isMmol ? 'decimal' : 'numeric';
+      calcVolumes();
+    });
     srcNaClSelect.addEventListener('change', calcVolumes);
+    srcLIPSelect.addEventListener('change', calcVolumes);
+    srcCaUnitSelect.addEventListener('change', () => {
+      unitCaGlu10.textContent = srcCaUnitSelect.value === 'ml' ? 'mL/kg/dia' : 'mEq/kg/dia';
+      calcVolumes();
+    });
     srcKClSelect.addEventListener('change', calcVolumes);
     btnLimpar.addEventListener('click', () => {
       document.querySelectorAll('#editor input').forEach(inp => { if(!inp.readOnly) inp.value=''; else inp.value=''; });
       document.getElementById('srcPSelect').value = '';
       document.getElementById('srcNaClSelect').value = '10';
       document.getElementById('srcKClSelect').value = '10';
+      document.getElementById('srcLIPSelect').value = 'intralipid';
+      srcCaUnitSelect.value = 'meq';
+      unitCaGlu10.textContent = 'mEq/kg/dia';
       calcVolumes(); atualizarPesoCalorico();
     });
 
@@ -781,7 +844,7 @@
       const comp = [
         ['Oferta hídrica (alvo)', volH2O.value, 'ml'],
         ['Aminoácidos 10%', volAA.value, 'ml'],
-        ['Lipídeos 20%', volLIP.value, 'ml'],
+        [srcLIPSelect.value === 'smof' ? 'SMOFlipid 20%' : 'Lipídeos 20% (Intralipid)', volLIP.value, 'ml'],
         ['Glicose 50%', volG50.value, 'ml'],
         [srcNaClSelect.value === '20' ? 'Cloreto de sódio 20%' : 'Cloreto de sódio 10%', volNaCl10.value, 'ml'],
         [srcKClSelect.value === '191' ? 'Cloreto de potássio 19,1%' : 'Cloreto de potássio 10%', volKCl10.value, 'ml'],
