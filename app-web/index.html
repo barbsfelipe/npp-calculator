@@ -1386,7 +1386,15 @@
           .ilike('nome_paciente', '%' + termo.trim() + '%')
           .order('data_prescricao', { ascending: false })
           .limit(200);
-        if (error) { console.warn('Erro ao buscar pacientes salvos:', error); return []; }
+        if (error) {
+          console.warn('Erro ao buscar pacientes salvos:', error);
+          showSalvarStatus('Não foi possível buscar. Tente novamente.');
+          return [];
+        }
+        // Busca deu certo — some com uma mensagem de erro de uma tentativa
+        // anterior que tenha ficado na tela (senão ela fica grudada mesmo
+        // depois de uma busca bem-sucedida).
+        hideSalvarStatus();
         const vistos = new Set();
         const unicos = [];
         for (const row of data) {
@@ -1397,6 +1405,7 @@
         return unicos.slice(0, 8);
       } catch (e) {
         console.warn('Falha de rede ao buscar pacientes salvos:', e);
+        showSalvarStatus('Não foi possível buscar. Tente novamente.');
         return [];
       }
     }
