@@ -1479,6 +1479,44 @@
       if (!e.target.closest('#campoNome')) esconderBuscaDropdown();
     });
 
+    async function salvarPrescricaoAtual(){
+      hideSalvarStatus();
+      if (!supabaseClient || !currentUserId) {
+        showSalvarStatus('Não foi possível salvar — faça login novamente.');
+        return;
+      }
+      const nomePaciente = nome.value.trim();
+      if (!nomePaciente) {
+        showSalvarStatus('Preencha o nome do paciente antes de salvar.');
+        return;
+      }
+      const row = {
+        user_id: currentUserId,
+        nome_paciente: nomePaciente,
+        data_prescricao: hojeISO(),
+        hospital: hospital.value.trim(),
+        setor: setor.value.trim(),
+        leito: leito.value.trim(),
+        payload: getPayloadFromForm(),
+        updated_at: new Date().toISOString(),
+      };
+      try {
+        const { error } = await supabaseClient
+          .from('npp_prescricoes_salvas')
+          .upsert(row, { onConflict: 'user_id,nome_paciente,data_prescricao' });
+        if (error) {
+          console.warn('Erro ao salvar prescrição:', error);
+          showSalvarStatus('Não foi possível salvar. Tente novamente.');
+          return;
+        }
+        showSalvarStatus('Prescrição salva ✓', false);
+      } catch (e) {
+        console.warn('Falha de rede ao salvar prescrição:', e);
+        showSalvarStatus('Não foi possível salvar. Tente novamente.');
+      }
+    }
+    document.getElementById('btnSalvarPrescricao').addEventListener('click', salvarPrescricaoAtual);
+
     (async function init(){
       updatePUI();
       let allowed = false;
