@@ -1517,6 +1517,61 @@
     }
     document.getElementById('btnSalvarPrescricao').addEventListener('click', salvarPrescricaoAtual);
 
+    async function buscarHistoricoPaciente(nomePaciente){
+      try {
+        const { data, error } = await supabaseClient
+          .from('npp_prescricoes_salvas')
+          .select('data_prescricao')
+          .eq('user_id', currentUserId)
+          .eq('nome_paciente', nomePaciente)
+          .order('data_prescricao', { ascending: false });
+        if (error) { console.warn('Erro ao buscar histórico:', error); return []; }
+        return data.map(r => r.data_prescricao);
+      } catch (e) {
+        console.warn('Falha de rede ao buscar histórico:', e);
+        return [];
+      }
+    }
+
+    async function carregarPrescricaoPorData(nomePaciente, dataISO){
+      try {
+        const { data, error } = await supabaseClient
+          .from('npp_prescricoes_salvas')
+          .select('payload')
+          .eq('user_id', currentUserId)
+          .eq('nome_paciente', nomePaciente)
+          .eq('data_prescricao', dataISO)
+          .maybeSingle();
+        if (error || !data) { console.warn('Erro ao carregar prescrição da data:', error); return null; }
+        return data.payload;
+      } catch (e) {
+        console.warn('Falha de rede ao carregar prescrição da data:', e);
+        return null;
+      }
+    }
+
+    const overlayHistorico = document.getElementById('overlayHistorico');
+    const historicoLista = document.getElementById('historicoLista');
+    btnVerHistorico.addEventListener('click', async () => {
+      const nomePaciente = nome.value.trim();
+      if (!nomePaciente) return;
+      const datas = await buscarHistoricoPaciente(nomePaciente);
+      if (!datas.length) { showSalvarStatus('Nenhum histórico encontrado para esse nome.'); return; }
+      historicoLista.innerHTML = datas.map(d => `<button type="button" class="secondary historico-item" data-data="${d}">${formatDataBR(d)}</button>`).join('');
+      historicoLista.querySelectorAll('.historico-item').forEach(botao => {
+        botao.addEventListener('click', async () => {
+          overlayHistorico.style.display = 'none';
+          if (formularioTemDadosPreenchidos() && !window.confirm('Isso vai substituir os dados atuais no formulário. Continuar?')) return;
+          const payload = await carregarPrescricaoPorData(nomePaciente, botao.dataset.data);
+          if (!payload) { showSalvarStatus('Não foi possível carregar essa data.'); return; }
+          preencherFormularioComPayload(payload);
+          btnVerHistorico.style.display = 'inline';
+        });
+      });
+      overlayHistorico.style.display = 'flex';
+    });
+    document.getElementById('btnFecharHistorico').addEventListener('click', () => { overlayHistorico.style.display = 'none'; });
+
     (async function init(){
       updatePUI();
       let allowed = false;
