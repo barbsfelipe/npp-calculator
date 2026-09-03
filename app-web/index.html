@@ -993,6 +993,10 @@
     } catch (e) {
       console.warn('Erro ao inicializar o Supabase:', e);
     }
+    // Preenchido em checkAccess() assim que há uma sessão válida — usado
+    // pelas funções de salvar/buscar prescrição (===== Salvar/reabrir
+    // prescrição ===== mais abaixo) pra filtrar por dono via RLS.
+    let currentUserId = null;
     const overlayAuth = document.getElementById('overlayAuth');
     const authEmailRow = document.getElementById('authEmailRow');
     const authEmail = document.getElementById('authEmail');
@@ -1230,6 +1234,7 @@
         overlayAuth.style.display = 'flex';
         return false;
       }
+      currentUserId = session.user.id;
       overlayAuth.style.display = 'none';
       accountEmail.textContent = session.user.email || '';
       accountBar.style.display = 'block';
@@ -1245,6 +1250,63 @@
       hidePaywallStatus();
       overlayPaywall.style.display = 'flex';
       return false;
+    }
+
+    // ===== Salvar/reabrir prescrição =====
+    // Lista de todos os campos EDITÁVEIS que entram no payload salvo —
+    // cabeçalho + todas as doses + todos os seletores de fonte/unidade.
+    // Os campos "(auto)" (volumes, calorias, etc.) ficam de fora de
+    // propósito: são sempre recalculados ao carregar, então salvá-los
+    // só arriscaria restaurar um valor desatualizado.
+    const headerFieldIds = ['hospital','nome','idade','peso','setor','leito','registro'];
+    const camposSalvarIds = [...headerFieldIds, ...doseFieldIds, 'srcPSelect','srcNaClSelect','srcKClSelect','srcLIPSelect','srcCaUnitSelect','srcPUnitSelect'];
+
+    function getPayloadFromForm(){
+      const payload = {};
+      camposSalvarIds.forEach(id => {
+        const el = document.getElementById(id);
+        if (el) payload[id] = el.value;
+      });
+      return payload;
+    }
+
+    // Preenche cada campo com o valor salvo e força um recálculo geral —
+    // reusa o mesmo motor que já roda a cada tecla digitada, então não
+    // existe lógica de cálculo nova aqui. Os 3 selects que têm um span de
+    // unidade dinâmico (Ca e P) não disparam 'change' ao setar .value via
+    // JS, então replicamos manualmente a mesma atualização de texto que
+    // os listeners de 'change' já fazem (ver addEventListener de
+    // srcCaUnitSelect/srcPUnitSelect, seção de eletrólitos/fósforo).
+    function preencherFormularioComPayload(payload){
+      camposSalvarIds.forEach(id => {
+        const el = document.getElementById(id);
+        if (el && Object.prototype.hasOwnProperty.call(payload, id)) el.value = payload[id];
+      });
+      updatePUI();
+      unitCaGlu10.textContent = srcCaUnitSelect.value === 'ml' ? 'mL/kg/dia' : 'mEq/kg/dia';
+      const isMmolP = srcPUnitSelect.value === 'mmol';
+      unitDoseP.textContent = isMmolP ? 'mmol/kg/dia' : 'mg/kg/dia';
+      dosePmgkg.inputMode = isMmolP ? 'decimal' : 'numeric';
+      atualizarPesoCalorico();
+      calcVolumes();
+    }
+
+    function formularioTemDadosPreenchidos(){
+      return camposSalvarIds.some(id => {
+        const el = document.getElementById(id);
+        return el && el.value && el.value.trim() !== '';
+      });
+    }
+
+    // Data local (não UTC — new Date().toISOString() erraria o dia perto
+    // da meia-noite no fuso do Brasil).
+    function hojeISO(){
+      const d = new Date();
+      return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`;
+    }
+    function formatDataBR(iso){
+      const [y,m,d] = iso.split('-');
+      return `${d}/${m}/${y}`;
     }
 
     (async function init(){
