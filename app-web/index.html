@@ -1338,6 +1338,122 @@
       return `${d}/${m}/${y}`;
     }
 
+    const salvarStatus = document.getElementById('salvarStatus');
+    function showSalvarStatus(text, isError = true) {
+      salvarStatus.textContent = text;
+      salvarStatus.style.color = isError ? 'var(--danger)' : 'var(--accent)';
+      salvarStatus.style.display = 'block';
+    }
+    function hideSalvarStatus() { salvarStatus.style.display = 'none'; }
+
+    function escapeHtml(s){
+      return String(s).replace(/[&<>"']/g, c => ({ '&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;' }[c]));
+    }
+
+    // Busca até 200 linhas mais recentes que combinam com o termo, depois
+    // reduz pro primeiro (mais recente, já que veio ordenado desc) de cada
+    // nome distinto — evita precisar de uma view/RPC só pra "distinct on"
+    // no Postgres, e o volume esperado por usuário é pequeno.
+    // Toda chamada ao Supabase aqui embaixo passa por try/catch — o SDK
+    // normalmente resolve com { error } em vez de rejeitar a promise, mas
+    // uma falha de rede mais séria (ex.: DNS fora do ar) pode rejeitar de
+    // verdade, e isso não pode virar uma exceção não tratada estourando
+    // dentro de um listener assíncrono (mesma garantia de não travar o
+    // app que o resto do arquivo já segue pro RevenueCat/Supabase Auth).
+    async function buscarPacientesSalvos(termo){
+      if (!supabaseClient || !currentUserId || !termo || termo.trim().length < 2) return [];
+      try {
+        const { data, error } = await supabaseClient
+          .from('npp_prescricoes_salvas')
+          .select('nome_paciente, hospital, setor, leito, data_prescricao')
+          .eq('user_id', currentUserId)
+          .ilike('nome_paciente', '%' + termo.trim() + '%')
+          .order('data_prescricao', { ascending: false })
+          .limit(200);
+        if (error) { console.warn('Erro ao buscar pacientes salvos:', error); return []; }
+        const vistos = new Set();
+        const unicos = [];
+        for (const row of data) {
+          if (vistos.has(row.nome_paciente)) continue;
+          vistos.add(row.nome_paciente);
+          unicos.push(row);
+        }
+        return unicos.slice(0, 8);
+      } catch (e) {
+        console.warn('Falha de rede ao buscar pacientes salvos:', e);
+        return [];
+      }
+    }
+
+    async function carregarPrescricaoMaisRecente(nomePaciente){
+      try {
+        const { data, error } = await supabaseClient
+          .from('npp_prescricoes_salvas')
+          .select('payload')
+          .eq('user_id', currentUserId)
+          .eq('nome_paciente', nomePaciente)
+          .order('data_prescricao', { ascending: false })
+          .limit(1)
+          .maybeSingle();
+        if (error || !data) { console.warn('Erro ao carregar prescrição:', error); return null; }
+        return data.payload;
+      } catch (e) {
+        console.warn('Falha de rede ao carregar prescrição:', e);
+        return null;
+      }
+    }
+
+    const buscaDropdown = document.getElementById('buscaDropdown');
+    const btnVerHistorico = document.getElementById('btnVerHistorico');
+    let buscaTimeout = null;
+    let buscaResultadosCache = [];
+
+    function esconderBuscaDropdown(){
+      buscaDropdown.style.display = 'none';
+      buscaDropdown.innerHTML = '';
+    }
+
+    function renderizarBuscaDropdown(resultados){
+      if (!resultados.length) { esconderBuscaDropdown(); return; }
+      buscaDropdown.innerHTML = resultados.map((r, i) => {
+        const detalhe = [r.hospital, r.setor, r.leito].filter(Boolean).join(' · ');
+        return `<div class="busca-item" data-idx="${i}">
+          <div class="busca-item-nome">${escapeHtml(r.nome_paciente)}</div>
+          <div class="busca-item-detalhe">${escapeHtml(detalhe)}${detalhe ? ' — ' : ''}${formatDataBR(r.data_prescricao)}</div>
+        </div>`;
+      }).join('');
+      buscaDropdown.style.display = 'block';
+      buscaDropdown.querySelectorAll('.busca-item').forEach(el => {
+        el.addEventListener('click', () => selecionarPacienteDaBusca(buscaResultadosCache[Number(el.dataset.idx)]));
+      });
+    }
+
+    async function selecionarPacienteDaBusca(resultado){
+      esconderBuscaDropdown();
+      if (formularioTemDadosPreenchidos() && !window.confirm('Isso vai substituir os dados atuais no formulário. Continuar?')) return;
+      hideSalvarStatus();
+      const payload = await carregarPrescricaoMaisRecente(resultado.nome_paciente);
+      if (!payload) { showSalvarStatus('Não foi possível carregar essa prescrição.'); return; }
+      preencherFormularioComPayload(payload);
+      btnVerHistorico.style.display = 'inline';
+    }
+
+    nome.addEventListener('input', () => {
+      btnVerHistorico.style.display = 'none';
+      clearTimeout(buscaTimeout);
+      const termo = nome.value;
+      if (termo.trim().length < 2) { esconderBuscaDropdown(); return; }
+      buscaTimeout = setTimeout(async () => {
+        const resultados = await buscarPacientesSalvos(termo);
+        buscaResultadosCache = resultados;
+        renderizarBuscaDropdown(resultados);
+      }, 300);
+    });
+
+    document.addEventListener('click', (e) => {
+      if (!e.target.closest('#campoNome')) esconderBuscaDropdown();
+    });
+
     (async function init(){
       updatePUI();
       let allowed = false;
