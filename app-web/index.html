@@ -57,6 +57,19 @@
     .unit{position:absolute; right:10px; top:50%; transform:translateY(-50%); color:#666; font-size:13px}
     .unit-wrap .unit{position:static; grid-row:2; grid-column:1; align-self:center; justify-self:end; margin-right:10px; transform:none;}
 
+    .busca-wrap{position:relative}
+    .busca-dropdown{
+      position:absolute; top:100%; left:0; right:0; margin-top:4px;
+      background:#fff; border:1px solid var(--line); border-radius:8px;
+      box-shadow:0 4px 16px rgba(0,0,0,.12); z-index:50; max-height:240px; overflow:auto;
+    }
+    .busca-item{padding:8px 12px; cursor:pointer; border-bottom:1px solid var(--line)}
+    .busca-item:last-child{border-bottom:none}
+    .busca-item:hover{background:#eaf4ff}
+    .busca-item-nome{font-size:14px; font-weight:600}
+    .busca-item-detalhe{font-size:12px; color:var(--muted)}
+    .historico-item{display:block; width:100%; text-align:left; margin-bottom:6px}
+
     hr{border:none; border-top:1px solid var(--line); margin:16px 0}
     .bar{height:4px; background:linear-gradient(90deg, var(--accent), #39f); border-radius:999px; margin:8px 0 16px}
 
@@ -116,17 +129,17 @@
     #end-actions{display:flex; justify-content:flex-end; gap:10px; margin-top:22px}
 
     /* ===== Resumo de Prescrição ===== */
-    #overlayResumo, #overlayDisclaimer, #overlayAuth, #overlayPaywall{
+    #overlayResumo, #overlayDisclaimer, #overlayAuth, #overlayPaywall, #overlayHistorico{
       position: fixed; inset: 0; background: rgba(0,0,0,.35);
       display:none; align-items: center; justify-content: center; padding: 24px;
       z-index: 9999;
     }
-    #resumoCard, #disclaimerCard, #authCard, #paywallCard{
+    #resumoCard, #disclaimerCard, #authCard, #paywallCard, #historicoCard{
       width: 210mm; max-width: 100%; background: #fff; border-radius: 14px; box-shadow:0 20px 60px rgba(0,0,0,.25);
       padding: 18mm; max-height: 90vh; overflow: auto;
     }
-    #disclaimerCard, #authCard, #paywallCard{width:120mm}
-    #resumoCard h2, #disclaimerCard h2, #authCard h2, #paywallCard h2{margin:0 0 8px 0; font-size:18px}
+    #disclaimerCard, #authCard, #paywallCard, #historicoCard{width:120mm}
+    #resumoCard h2, #disclaimerCard h2, #authCard h2, #paywallCard h2, #historicoCard h2{margin:0 0 8px 0; font-size:18px}
     #resumoCard .muted{color:#666; font-size:12px; margin-bottom:12px}
     .resumo-sec{margin-top:14px}
     .resumo-sec h3{font-size:13px; margin:8px 0}
@@ -167,9 +180,11 @@
           <label for="hospital">Hospital</label>
           <input id="hospital" name="hospital" type="text" placeholder="Nome do hospital" autocomplete="organization" />
         </div>
-        <div class="field span-12">
+        <div class="field span-12 busca-wrap" id="campoNome">
           <label for="nome">Nome completo</label>
-          <input id="nome" name="nome" type="text" placeholder="Nome do paciente" autocomplete="name" />
+          <input id="nome" name="nome" type="text" placeholder="Nome do paciente" autocomplete="off" />
+          <div id="buscaDropdown" class="busca-dropdown" style="display:none"></div>
+          <button type="button" class="link-btn" id="btnVerHistorico" style="display:none; margin-top:4px;">Ver histórico</button>
         </div>
         <div class="field span-3">
           <label for="idade">Idade (dias/meses/anos)</label>
@@ -204,8 +219,10 @@
         <small>Use vírgula ou ponto — a calculadora entende ambos.</small>
         <div class="actions">
           <button type="button" class="secondary" id="btnLimpar">Limpar</button>
+          <button type="button" id="btnSalvarPrescricao">Salvar prescrição</button>
         </div>
       </div>
+      <div id="salvarStatus" class="sub" style="display:none; margin-top:6px;"></div>
 
       <hr />
     </header>
@@ -518,6 +535,18 @@
       <div class="resumo-actions">
         <button type="button" class="secondary" id="btnVoltar">Voltar à edição</button>
         <button type="button" id="btnImprimir">Imprimir</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Overlay Histórico do paciente -->
+  <div id="overlayHistorico" role="dialog" aria-modal="true" aria-labelledby="historicoTitulo">
+    <div id="historicoCard">
+      <h2 id="historicoTitulo">Histórico de prescrições</h2>
+      <div class="muted">Escolha uma data pra carregar</div>
+      <div id="historicoLista" style="margin-top:14px"></div>
+      <div class="resumo-actions">
+        <button type="button" class="secondary" id="btnFecharHistorico">Fechar</button>
       </div>
     </div>
   </div>
