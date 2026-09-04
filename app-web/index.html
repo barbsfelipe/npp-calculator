@@ -812,8 +812,18 @@
       const MVIVol=Math.min(P*FACT_MVI,10); volMVI.value=formatML(MVIVol);
       const dGln=parseNumberBR(doseGln.value); const GlnVol=Number.isFinite(dGln)?(dGln*P)/FACT_GLN:NaN; volGln.value=Number.isFinite(GlnVol)?formatML(GlnVol):'';
 
-      // Soma e água destilada
-      const soma = (AA||0)+(LIP||0)+(G50||0)+(NaVol||0)+(KVol||0)+(MgVol||0)+(CaVol||0)+(PVol||0)+(SeVol||0)+(ZnVol||0)+(TEVol||0)+(MVIVol||0)+(GlnVol||0);
+      // Soma e água destilada — soma os valores JÁ ARREDONDADOS (os mesmos
+      // exibidos em cada campo/no resumo impresso), não os valores brutos.
+      // Na prática, quem prepara a bolsa mede/aspira exatamente o valor
+      // arredondado de cada componente (a seringa não mede com mais de 1
+      // casa decimal), então o volume que realmente vai pra bolsa é a soma
+      // dos arredondados — e isso também garante que "Soma dos componentes"
+      // bata 100% com uma conferência manual feita a partir dos números
+      // impressos (antes, podia divergir até 0,1 mL: soma-dos-arredondados
+      // ≠ arredondado-da-soma, propriedade matemática esperada mas confusa
+      // na hora de conferir na mão).
+      const arred1 = (v) => Number.isFinite(v) ? (parseNumberBR(formatML(v)) || 0) : 0;
+      const soma = arred1(AA)+arred1(LIP)+arred1(G50)+arred1(NaVol)+arred1(KVol)+arred1(MgVol)+arred1(CaVol)+arred1(PVol)+arred1(SeVol)+arred1(ZnVol)+arred1(TEVol)+arred1(MVIVol)+arred1(GlnVol);
       somaComponentes.value = formatML(soma);
       const agua = Number.isFinite(Vtotal_mL) ? (Vtotal_mL - soma) : NaN;
       aguaDestilada.value = Number.isFinite(agua) ? formatML(agua) : '';
