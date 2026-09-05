@@ -173,6 +173,10 @@
           <label for="registro">Registro</label>
           <input id="registro" name="registro" type="text" placeholder="Prontuário / ID" />
         </div>
+        <div class="field span-3">
+          <label for="dataPrescricao">Data</label>
+          <input id="dataPrescricao" name="dataPrescricao" type="date" />
+        </div>
       </div>
 
       <div class="meta">
@@ -530,6 +534,15 @@
     }
     function formatNumberBR(n, frac=2){ if(!Number.isFinite(n)) return ''; return n.toLocaleString('pt-BR', {minimumFractionDigits:frac, maximumFractionDigits:frac}); }
     function formatML(n){ return formatNumberBR(n, 1); }
+    // Data local (não UTC) — usada só pro campo "Data" da prescrição.
+    function hojeISO(){
+      const d = new Date();
+      return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`;
+    }
+    function formatDataBR(iso){
+      const [y,m,d] = iso.split('-');
+      return `${d}/${m}/${y}`;
+    }
     function nonEmpty(x){ return x !== undefined && x !== null && String(x).trim() !== ''; }
     function nonEmptyVal(v){ return v !== undefined && v !== null && String(v).trim() !== '' && String(v).trim() !== '0'; }
     const f0 = (n)=>formatNumberBR(n,0);
@@ -598,6 +611,7 @@
     const setor = document.getElementById('setor');
     const leito = document.getElementById('leito');
     const registro = document.getElementById('registro');
+    const dataPrescricao = document.getElementById('dataPrescricao');
     const avisoPeso = document.getElementById('avisoPeso');
 
     // ===== Peso calórico =====
@@ -820,6 +834,10 @@
       document.getElementById('srcLIPSelect').value = 'intralipid';
       srcCaUnitSelect.value = 'meq';
       unitCaGlu10.textContent = 'mEq/kg/dia';
+      srcPUnitSelect.value = 'mg';
+      unitDoseP.textContent = 'mg/kg/dia';
+      dosePmgkg.inputMode = 'numeric';
+      dataPrescricao.value = hojeISO();
       calcVolumes(); atualizarPesoCalorico();
     });
 
@@ -841,6 +859,7 @@
 
     function buildResumo(){
       kvHeader.innerHTML = [
+        ['Data', dataPrescricao.value ? formatDataBR(dataPrescricao.value) : ''],
         ['Hospital', hospital.value],
         ['Nome', nome.value],
         ['Idade', idade.value],
@@ -900,7 +919,7 @@
     const btnFecharDisclaimer = document.getElementById('btnFecharDisclaimer');
     btnFecharDisclaimer.addEventListener('click', () => { overlayDisclaimer.style.display = 'none'; });
 
-    (function init(){ updatePUI(); overlayDisclaimer.style.display = 'flex'; })();
+    (function init(){ if (!dataPrescricao.value) dataPrescricao.value = hojeISO(); updatePUI(); overlayDisclaimer.style.display = 'flex'; })();
 
     if('serviceWorker' in navigator){
       window.addEventListener('load', () => { navigator.serviceWorker.register('sw.js').catch(()=>{}); });

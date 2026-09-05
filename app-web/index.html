@@ -213,6 +213,10 @@
           <label for="registro">Registro</label>
           <input id="registro" name="registro" type="text" placeholder="Prontuário / ID" />
         </div>
+        <div class="field span-3">
+          <label for="dataPrescricao">Data</label>
+          <input id="dataPrescricao" name="dataPrescricao" type="date" />
+        </div>
       </div>
 
       <div class="meta">
@@ -699,6 +703,7 @@
     const setor = document.getElementById('setor');
     const leito = document.getElementById('leito');
     const registro = document.getElementById('registro');
+    const dataPrescricao = document.getElementById('dataPrescricao');
     const avisoPeso = document.getElementById('avisoPeso');
 
     // ===== Peso calórico =====
@@ -925,6 +930,7 @@
       srcPUnitSelect.value = 'mg';
       unitDoseP.textContent = 'mg/kg/dia';
       dosePmgkg.inputMode = 'numeric';
+      dataPrescricao.value = hojeISO();
       calcVolumes(); atualizarPesoCalorico();
     });
 
@@ -946,6 +952,7 @@
 
     function buildResumo(){
       kvHeader.innerHTML = [
+        ['Data', dataPrescricao.value ? formatDataBR(dataPrescricao.value) : ''],
         ['Hospital', hospital.value],
         ['Nome', nome.value],
         ['Idade', idade.value],
@@ -1297,18 +1304,21 @@
     // Os campos "(auto)" (volumes, calorias, etc.) ficam de fora de
     // propósito: são sempre recalculados ao carregar, então salvá-los
     // só arriscaria restaurar um valor desatualizado.
-    const headerFieldIds = ['hospital','nome','idade','peso','setor','leito','registro'];
+    const headerFieldIds = ['hospital','nome','idade','peso','setor','leito','registro','dataPrescricao'];
     const camposSalvarIds = [...headerFieldIds, ...doseFieldIds, 'srcPSelect','srcNaClSelect','srcKClSelect','srcLIPSelect','srcCaUnitSelect','srcPUnitSelect'];
 
     // Campos cuja presença de valor indica dado real digitado pelo usuário —
     // diferente de camposSalvarIds (que é TUDO que é salvo/restaurado). Ignora
-    // 'nome' (é o próprio campo de busca) e, pros 5 selects que sempre têm um
-    // valor padrão não-vazio no HTML, só conta como "dado preenchido" se o
-    // valor atual for DIFERENTE do padrão (não basta estarem presentes — tem
-    // que terem sido de fato alterados pelo usuário). srcPSelect fica fora
-    // desse mapa de propósito: o default dele já É vazio ("Selecione…"), então
-    // ele já funciona certo na lista simples abaixo.
-    const outrosCamposQueIndicamDadosPreenchidos = [...headerFieldIds.filter(id => id !== 'nome'), ...doseFieldIds, 'srcPSelect'];
+    // 'nome' (é o próprio campo de busca) e 'dataPrescricao' (sempre vem
+    // preenchido com o dia de hoje por padrão, então "ter valor" não indica
+    // dose/dado clínico em risco de ser perdido), e, pros 5 selects que
+    // sempre têm um valor padrão não-vazio no HTML, só conta como "dado
+    // preenchido" se o valor atual for DIFERENTE do padrão (não basta
+    // estarem presentes — tem que terem sido de fato alterados pelo
+    // usuário). srcPSelect fica fora desse mapa de propósito: o default
+    // dele já É vazio ("Selecione…"), então ele já funciona certo na lista
+    // simples abaixo.
+    const outrosCamposQueIndicamDadosPreenchidos = [...headerFieldIds.filter(id => id !== 'nome' && id !== 'dataPrescricao'), ...doseFieldIds, 'srcPSelect'];
     const valoresPadraoSelects = { srcNaClSelect: '10', srcKClSelect: '10', srcLIPSelect: 'intralipid', srcCaUnitSelect: 'meq', srcPUnitSelect: 'mg' };
 
     function getPayloadFromForm(){
@@ -1502,7 +1512,10 @@
       const row = {
         user_id: currentUserId,
         nome_paciente: nomePaciente,
-        data_prescricao: hojeISO(),
+        // Usa a data do campo "Data" se preenchida (permite deixar pronta a
+        // prescrição de amanhã, por exemplo) — só cai pra hoje se o campo
+        // estiver vazio por algum motivo.
+        data_prescricao: dataPrescricao.value || hojeISO(),
         hospital: hospital.value.trim(),
         setor: setor.value.trim(),
         leito: leito.value.trim(),
@@ -1582,6 +1595,7 @@
     document.getElementById('btnFecharHistorico').addEventListener('click', () => { overlayHistorico.style.display = 'none'; });
 
     (async function init(){
+      if (!dataPrescricao.value) dataPrescricao.value = hojeISO();
       updatePUI();
       let allowed = false;
       try {
