@@ -442,6 +442,7 @@
           <input id="aguaDestilada" type="text" placeholder="—" readonly />
           <span class="unit" aria-hidden="true">ml</span>
         </div>
+        <div id="avisoAguaNegativa" class="field span-12 aviso-peso aviso-peso-bloqueio" style="display:none"></div>
       </div>
       <p class="notice"><b>Volume total</b> é igual ao <b>Volume hídrico</b>. A água destilada = Volume total − Soma dos componentes. (A oferta hídrica não entra na soma.)</p>
     </section>
@@ -672,6 +673,7 @@
     const volTotal = document.getElementById('volTotal');
     const somaComponentes = document.getElementById('somaComponentes');
     const aguaDestilada = document.getElementById('aguaDestilada');
+    const avisoAguaNegativa = document.getElementById('avisoAguaNegativa');
 
     // Informativo (outputs)
     const kcalTotais = document.getElementById('kcalTotais');
@@ -820,8 +822,18 @@
       const soma = arred1(AA)+arred1(LIP)+arred1(G50)+arred1(NaVol)+arred1(KVol)+arred1(MgVol)+arred1(CaVol)+arred1(PVol)+arred1(SeVol)+arred1(ZnVol)+arred1(TEVol)+arred1(MVIVol)+arred1(GlnVol);
       somaComponentes.value = formatML(soma);
       const agua = Number.isFinite(Vtotal_mL) ? (Vtotal_mL - soma) : NaN;
-      aguaDestilada.value = Number.isFinite(agua) ? formatML(agua) : '';
-      aguaDestilada.classList.toggle('output-negative', Number.isFinite(agua) && agua < 0);
+      // Água destilada negativa é matematicamente correta (soma dos
+      // componentes > volume total), mas não existe na prática clínica —
+      // não dá pra tirar água de uma bolsa. Em vez de mostrar o número
+      // negativo, bloqueia o campo (mostra "—") e avisa em destaque por
+      // quanto os componentes excedem o volume total, pra guiar o ajuste.
+      const excedeVolume = Number.isFinite(agua) && agua < 0;
+      aguaDestilada.value = Number.isFinite(agua) ? (excedeVolume ? '—' : formatML(agua)) : '';
+      aguaDestilada.classList.toggle('output-negative', excedeVolume);
+      avisoAguaNegativa.style.display = excedeVolume ? '' : 'none';
+      if (excedeVolume) {
+        avisoAguaNegativa.textContent = `A soma dos componentes ultrapassa o volume total em ${formatML(-agua)} mL — reduza as doses ou aumente o volume/oferta hídrica antes de finalizar a prescrição.`;
+      }
 
       // ===== Informativo =====
       // Gramas de macros
