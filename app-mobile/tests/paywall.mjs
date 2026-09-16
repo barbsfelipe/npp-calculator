@@ -24,8 +24,8 @@ await page.waitForSelector('#overlayPaywall', { state: 'visible' });
 
 const mensalText = await page.textContent('#btnPlanoMensal');
 const anualText = await page.textContent('#btnPlanoAnual');
-assert.match(mensalText, /R\$49,90/, 'botão mensal deveria mostrar R$49,90');
-assert.match(anualText, /R\$298,80/, 'botão anual deveria mostrar R$298,80');
+assert.match(mensalText, /R\$9,90/, 'botão mensal deveria mostrar R$9,90');
+assert.match(anualText, /R\$79,90/, 'botão anual deveria mostrar R$79,90');
 
 // Fora do runtime nativo, checagem de assinatura resolve false sem lançar erro.
 const subscribedInBrowser = await page.evaluate(() => window.hasActiveSubscription());
