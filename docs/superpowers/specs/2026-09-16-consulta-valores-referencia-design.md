@@ -118,6 +118,8 @@ Cada botão "?" no HTML: `<button type="button" class="ref-btn" data-ref="aminoa
 
 Prematuro 1º dia: 1,5–2,5. Prematuro a partir do 2º dia: 2,5–3,5. Termo: 1,5–3,0. 2º mês–3 anos: **1,0–2,5** (piso mínimo adicionado pós-verificação). 3–18 anos: **1,0–2,0** (idem).
 
+**Aviso anexado às duas linhas de "Prematuro"** (texto fixo da própria tabela, não depende de detectar prematuridade — ver "Limitações conhecidas" acima, este app não sabe se o paciente atual é prematuro): *"A ASPEN 2023 (Robinson et al., JPEN 2023;47(7):830-858) recomenda não iniciar abaixo de 3 g/kg/dia em prematuros — mais conservadora que a ESPGHAN 2018 usada nesta referência, que permite iniciar em 1,5 g/kg/dia."*
+
 Verificado contra a fonte primária (van Goudoever et al. 2018, *Clinical Nutrition*, Tabela 3 + recomendações R3.1-R3.10) — os tetos (2,5 e 2,0) já batiam com o material original, mas faltava o piso de 1,0 g/kg/d que a diretriz também define pras duas faixas (R3.6, R3.8, R3.10) — adicionado agora. Nota à parte (não afeta os números usados aqui, só contexto): a ASPEN 2023 (Robinson et al., *JPEN*) é mais recente e recomenda, especificamente pra prematuros, não descer abaixo de 3 g/kg/dia como alvo — mais agressiva que a ESPGHAN 2018 nesse ponto específico; mantendo a ESPGHAN como fonte principal desta spec, por ser a mesma já usada em todo o resto do material.
 
 ### `glicose` (VIG) — Tab.6 sem destaque (neonatal), Tab.7 destaque por peso
@@ -188,7 +190,14 @@ Lê direto de `MVI_BRANDS` — mesma lógica, 3 marcas (Trezevit AB, Polivit A P
 
 (Linha (a), concentração de cálcio isolada mEq/L, fica fora — não existe campo correspondente hoje, conforme decidido.)
 
-**Nota de verificação:** ao contrário das outras tabelas desta spec, estas (cátions divalentes <16mEq/L, relação Ca:P, osmolaridade 600/900, relação C/N) **não fazem parte das diretrizes ESPGHAN/ESPEN de nutrição parenteral pediátrica** — são valores de farmacotécnica/estabilidade de solução, de uma literatura diferente (compounding/farmácia clínica), não da mesma fonte primária usada no resto do material. "Cátions divalentes <16mEq/L" especificamente não foi localizado em nenhuma fonte checada. Decisão do usuário: manter como está (não são necessariamente errados, só vêm de outro tipo de fonte) — não investigar mais a fundo por ora.
+**Nota de verificação:** ao contrário das outras tabelas desta spec, estas (cátions divalentes, relação Ca:P, osmolaridade 600/900, relação C/N) **não fazem parte das diretrizes ESPGHAN/ESPEN de nutrição parenteral pediátrica** — pertencem à literatura de farmacotécnica/compounding. Segunda passada de verificação, focada especificamente nessa literatura (ASPEN 2014 — Boullata et al., "Parenteral Nutrition Ordering, Order Review, Compounding, Labeling, and Dispensing", *JPEN* 2014;38(3):334-377 — e INS *Infusion Therapy Standards of Practice* 2024), encontrou:
+
+- **Cátions divalentes**: achado real (Driscoll et al. 1995, citado pela ASPEN 2014), mas o corte de 16mEq/L é o *início* de uma faixa (16-20mEq/L) onde bolsas 3-em-1 (TNA, com lipídeo) passam a exigir dextrose/aminoácidos mais concentrados pra manter estabilidade — não um limite absoluto de segurança, e é específico de TNA.
+- **Relação Ca:P**: o valor realmente testado (RCT único, evidência fraca — Pelegano et al. 1991) é **1,7:1 mg (1,3:1 mmol)**, não "próximo de 2:1". A ASPEN 2014 recusa formalmente recomendar uma razão fixa pra prevenir precipitação — a prática atual usa curvas de solubilidade específicas por produto.
+- **Osmolaridade**: o corte de **900 mOsm/L** está bem sólido (ASPEN 2014 + INS 2024 convergem). O nível intermediário de "600 = cautela" vem de um único estudo antigo (Gazitua et al. 1979), não é um padrão formal de 3 níveis.
+- **Relação kcal/N**: não encontrado em nenhuma fonte de farmácia/compounding (é mesmo conceito de nutrição, não de estabilidade de solução) — e uma fonte da área (Skipper & Tupesis, *Nutr Clin Pract* 2005) afirma que esse índice está caindo em desuso pra calcular prescrição nutricional, por risco de superalimentação.
+
+**Decisão do usuário**: manter os 4 valores como estão na UI (não há recomendação forte o bastante a favor ou contra mudá-los) — sem editar os números nem adicionar as ressalvas acima como texto visível nos popovers. Ficam registradas aqui só como documentação/auditoria da verificação feita.
 
 ## UI
 
