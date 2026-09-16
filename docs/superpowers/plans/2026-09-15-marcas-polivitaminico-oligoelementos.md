@@ -2,7 +2,7 @@
 
 > **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:subagent-driven-development (recommended) or superpowers:executing-plans to implement this plan task-by-task. Steps use checkbox (`- [ ]`) syntax for tracking.
 
-**Goal:** Substituir o cálculo fixo do Polivitamínico (hoje travado na fórmula do Trezevit AB) e adicionar seletor de marca no Oligoelemento, nas três implementações da calculadora, com persistência da última marca escolhida.
+**Goal:** Substituir o cálculo fixo do Polivitamínico (hoje travado na fórmula do Trezevit AB) e adicionar seletor de marca no Oligoelemento, nas quatro implementações da calculadora (app-mobile, original/PWA, Electron, e app-web — a última adicionada como Task 4 após a revisão final do branch descobrir que o plano original tinha esquecido dela), com persistência da última marca escolhida (device-level nas três primeiras; por prescrição salva na app-web, que já tem esse mecanismo pra outros campos).
 
 **Architecture:** Duas tabelas de dados por marca (`MVI_BRANDS`, `TE_BRANDS`) + uma função `calcMVIVol(P, brandKey)` por implementação (sem módulo compartilhado — cada um dos 3 arquivos HTML é autocontido, seguindo o padrão já existente no projeto). Dois `<select>` novos disparam recálculo e gravam a escolha em armazenamento local (Capacitor Preferences no app-mobile, `localStorage` puro nos outros dois).
 
@@ -546,3 +546,367 @@ Se preferir verificação scriptada em vez de clicar manualmente, use o skill do
 - [ ] **Step 10: Sem commit**
 
 Este diretório é gitignored (`.gitignore:1:/app/`) — não há o que commitar aqui. Confirme que o app abre e calcula corretamente; isso encerra a tarefa.
+
+---
+
+### Task 4: `app-web/index.html` — portar a mudança (adicionada após revisão final do branch)
+
+**Contexto da adição tardia:** o plano original (Tasks 1-3) nomeou só três implementações, seguindo a descrição desatualizada do `CLAUDE.md` ("duas implementações paralelas"). Existe uma **quarta**: `app-web/index.html`, rastreada pelo git, com login Supabase + RevenueCat + "Salvar/reabrir prescrição" (tabela `npp_prescricoes_salvas`) — é a versão **em produção real** (barbsfelipe.github.io/npp-calculator/app-web/). Ficou de fora por engano e foi adicionada como Task 4 depois da revisão final do branch confirmar que ainda tinha a fórmula antiga travada no Trezevit AB.
+
+**Diferença estrutural importante em relação às Tasks 1-3:** este arquivo tem um mecanismo de "salvar/carregar prescrição por paciente" que as outras três implementações não têm (`camposSalvarIds` — lista de IDs de campo que entram no payload salvo no Supabase; `getPayloadFromForm()`/`preencherFormularioComPayload()`). Por causa disso, a marca escolhida **não** usa o mecanismo de "lembrar a última marca no dispositivo" (`prefsGet`/`prefsSet`) que as Tasks 1-3 implementaram — em vez disso, segue o padrão que este arquivo **já usa** para todo outro seletor de fonte (`srcNaClSelect`, `srcKClSelect`, `srcLIPSelect`, etc.): prescrição nova sempre abre no default fixo do HTML, e a marca escolhida fica salva **como parte da prescrição daquele paciente** (igual já acontece com fósforo, lipídeos, etc.), não como preferência do aparelho. Consistente com o próprio Limpar deste arquivo, que já reseta todos os outros selects pra valores fixos (diferente das Tasks 1-3, onde Limpar propositalmente NÃO reseta os dois selects novos).
+
+**Files:**
+- Modify: `app-web/index.html`
+
+**Interfaces:**
+- Produces: mesmos `MVI_BRANDS`/`TE_BRANDS`/`calcMVIVol` das Tasks 1-3 (valores idênticos, ver Global Constraints), mais uma função nova que as Tasks 1-3 não têm: `syncAdElementNotice()` (só alterna o aviso de manganês, sem mexer na dose — necessária porque `preencherFormularioComPayload` restaura a dose *salva* de `doseTE`, que pode ter sido ajustada manualmente pelo clínico, e não pode ser sobrescrita pelo default da marca).
+
+- [ ] **Step 1: HTML dos dois seletores**
+
+Substitua (por volta da linha 406, dentro da seção de Traços/Vitaminas — confirme com `grep -n "doseTE\|volMVI" app-web/index.html`):
+
+```html
+        <div class="field span-3 unit-wrap">
+          <label for="doseTE">Oligoelementos — dose</label>
+          <input id="doseTE" type="text" placeholder="0,00" inputmode="decimal" />
+          <span class="unit" aria-hidden="true">ml/kg/dia</span>
+        </div>
+        <div class="field span-3 unit-wrap">
+          <label for="volTE">Oligoelementos — volume (auto)</label>
+          <input id="volTE" type="text" placeholder="—" readonly />
+          <span class="unit" aria-hidden="true">ml</span>
+        </div>
+        <div class="field span-12 unit-wrap">
+          <label for="volMVI">Polivitamínicos — TrezevitAB (auto)</label>
+          <input id="volMVI" type="text" placeholder="2 mL/kg, máx 10 mL" readonly />
+          <span class="unit" aria-hidden="true">ml</span>
+        </div>
+```
+
+por (idêntico ao HTML das Tasks 1-3):
+
+```html
+        <div class="field span-12">
+          <label for="srcTESelect">Oligoelementos — marca</label>
+          <select id="srcTESelect">
+            <option value="pedelement" selected>Ped-Element</option>
+            <option value="adelement">Ad-Element</option>
+            <option value="oliped4">Oliped 4</option>
+            <option value="politrace4">Politrace 4</option>
+          </select>
+          <small class="notice" id="avisoAdElement" style="display:none">Mesmo com a dose ajustada, a oferta de manganês fica acima do recomendado.</small>
+        </div>
+        <div class="field span-3 unit-wrap">
+          <label for="doseTE">Oligoelementos — dose</label>
+          <input id="doseTE" type="text" placeholder="0,00" inputmode="decimal" />
+          <span class="unit" aria-hidden="true">ml/kg/dia</span>
+        </div>
+        <div class="field span-3 unit-wrap">
+          <label for="volTE">Oligoelementos — volume (auto)</label>
+          <input id="volTE" type="text" placeholder="—" readonly />
+          <span class="unit" aria-hidden="true">ml</span>
+        </div>
+        <div class="field span-12">
+          <label for="srcMVISelect">Polivitamínico — marca</label>
+          <select id="srcMVISelect">
+            <option value="trezevit" selected>Trezevit AB</option>
+            <option value="polivita">Polivit A Ped</option>
+            <option value="polivitb">Polivit B Ped</option>
+          </select>
+        </div>
+        <div class="field span-12 unit-wrap">
+          <label for="volMVI">Polivitamínico (auto)</label>
+          <input id="volMVI" type="text" placeholder="—" readonly />
+          <span class="unit" aria-hidden="true">ml</span>
+        </div>
+```
+
+- [ ] **Step 2: Referências de campo**
+
+Substitua (linha 680-681):
+
+```js
+    const doseTE = document.getElementById('doseTE'), volTE = document.getElementById('volTE');
+    const volMVI = document.getElementById('volMVI');
+```
+
+por:
+
+```js
+    const srcTESelect = document.getElementById('srcTESelect');
+    const avisoAdElement = document.getElementById('avisoAdElement');
+    const doseTE = document.getElementById('doseTE'), volTE = document.getElementById('volTE');
+    const srcMVISelect = document.getElementById('srcMVISelect');
+    const volMVI = document.getElementById('volMVI');
+```
+
+- [ ] **Step 3: Dados por marca + funções (inclui `syncAdElementNotice`, que as Tasks 1-3 não têm)**
+
+Substitua (linha 725):
+
+```js
+    const FACT_NACL10=1.7, FACT_NACL20=3.4, FACT_KCL10=1.34, FACT_KCL191=2.56, FACT_MG10=0.8, FACT_CAGLU10=0.5, FACT_MVI=2, FACT_ZN=230, FACT_SE=60, FACT_GLN=0.2, MG_PER_ML_P=31;
+```
+
+por:
+
+```js
+    const FACT_NACL10=1.7, FACT_NACL20=3.4, FACT_KCL10=1.34, FACT_KCL191=2.56, FACT_MG10=0.8, FACT_CAGLU10=0.5, FACT_ZN=230, FACT_SE=60, FACT_GLN=0.2, MG_PER_ML_P=31;
+    // Polivitamínico e Oligoelementos — dados por marca, verificados contra
+    // bulário ANVISA / literatura científica (ver
+    // docs/superpowers/specs/2026-09-15-marcas-polivitaminico-oligoelementos-design.md).
+    // MVI_BRANDS: 'tier: true' = degrau por faixa de peso (só Trezevit AB,
+    // que é dose fixa por ampola em cada faixa, não fator x peso); as
+    // demais usam 'factor' (mL/kg) x peso, com teto de 1 ampola ('cap').
+    const MVI_BRANDS = {
+      trezevit:  { label: 'Trezevit AB', tier: true },
+      polivita:  { label: 'Polivit A Ped', factor: 4, cap: 10 },
+      polivitb:  { label: 'Polivit B Ped', factor: 2, cap: 5 },
+    };
+    const TE_BRANDS = {
+      pedelement: { label: 'Ped-Element', dose: 0.2 },
+      adelement:  { label: 'Ad-Element', dose: 0.05, notice: true },
+      oliped4:    { label: 'Oliped 4', dose: 1 },
+      politrace4: { label: 'Politrace 4', dose: 0.1 },
+    };
+    function calcMVIVol(P, brandKey){
+      if(!Number.isFinite(P)) return NaN;
+      const brand = MVI_BRANDS[brandKey] || MVI_BRANDS.trezevit;
+      if(brand.tier){
+        if(P < 1) return 1.5;
+        if(P < 3) return 3.25;
+        return 5;
+      }
+      return Math.min(P*brand.factor, brand.cap);
+    }
+    // Só alterna o aviso de manganês, sem tocar na dose — usada ao
+    // restaurar uma prescrição salva (a dose salva pode ter sido ajustada
+    // manualmente pelo clínico e não deve ser sobrescrita pelo default da
+    // marca). applyTEBrandDefaults() (abaixo) é a versão completa, usada
+    // quando o próprio usuário troca de marca ou numa prescrição nova.
+    function syncAdElementNotice(){
+      const brand = TE_BRANDS[srcTESelect.value];
+      avisoAdElement.style.display = (brand && brand.notice) ? '' : 'none';
+    }
+    function applyTEBrandDefaults(){
+      const brand = TE_BRANDS[srcTESelect.value];
+      if(!brand) return;
+      doseTE.value = f2(brand.dose);
+      syncAdElementNotice();
+    }
+```
+
+(Nota: inclui a correção do bug crítico já encontrado na revisão final — `calcMVIVol` com guarda `Number.isFinite(P)` no início. Confirme que essa guarda já existe se as Tasks 1-3 já tiverem sido corrigidas antes desta task rodar.)
+
+- [ ] **Step 4: `selectFieldIds`**
+
+Substitua:
+
+```js
+    const selectFieldIds = ['srcPSelect','srcNaClSelect','srcKClSelect','srcLIPSelect','srcCaUnitSelect','srcPUnitSelect'];
+```
+
+por:
+
+```js
+    const selectFieldIds = ['srcPSelect','srcNaClSelect','srcKClSelect','srcLIPSelect','srcCaUnitSelect','srcPUnitSelect','srcMVISelect','srcTESelect'];
+```
+
+- [ ] **Step 5: `calcVolumes()`**
+
+Substitua (linha 819):
+
+```js
+      const MVIVol=Math.min(P*FACT_MVI,10); volMVI.value=formatML(MVIVol);
+```
+
+por:
+
+```js
+      const MVIVol=calcMVIVol(P, srcMVISelect.value); volMVI.value=formatML(MVIVol);
+```
+
+- [ ] **Step 6: Listeners — versão `prefsSet` (este arquivo já tem esse wrapper, ver abaixo)**
+
+Este arquivo já define `async function prefsGet(key) { return window.localStorage.getItem(key); }` / `async function prefsSet(key, value) { window.localStorage.setItem(key, String(value)); }` (é só um wrapper fino sobre `localStorage`, sem Capacitor). **Mas, ao contrário das Tasks 1-3, NÃO use `prefsSet`/`prefsGet` aqui** — pelo motivo explicado na introdução desta task (a marca faz parte do payload salvo por paciente, não uma preferência de aparelho). Substitua (procure `srcLIPSelect.addEventListener('change', calcVolumes);`):
+
+```js
+    srcLIPSelect.addEventListener('change', calcVolumes);
+```
+
+por:
+
+```js
+    srcLIPSelect.addEventListener('change', calcVolumes);
+    srcMVISelect.addEventListener('change', calcVolumes);
+    srcTESelect.addEventListener('change', () => {
+      applyTEBrandDefaults();
+      calcVolumes();
+    });
+```
+
+- [ ] **Step 7: `btnLimpar` — ao contrário das Tasks 1-3, ESTE reseta os dois selects (mesmo padrão que os outros selects já têm neste arquivo)**
+
+Substitua:
+
+```js
+    btnLimpar.addEventListener('click', () => {
+      document.querySelectorAll('#editor input').forEach(inp => { if(!inp.readOnly) inp.value=''; else inp.value=''; });
+      document.getElementById('srcPSelect').value = '';
+      document.getElementById('srcNaClSelect').value = '10';
+      document.getElementById('srcKClSelect').value = '10';
+      document.getElementById('srcLIPSelect').value = 'intralipid';
+      srcCaUnitSelect.value = 'meq';
+      unitCaGlu10.textContent = 'mEq/kg/dia';
+      srcPUnitSelect.value = 'mg';
+      unitDoseP.textContent = 'mg/kg/dia';
+      dosePmgkg.inputMode = 'numeric';
+      dataPrescricao.value = hojeISO();
+      calcVolumes(); atualizarPesoCalorico();
+    });
+```
+
+por:
+
+```js
+    btnLimpar.addEventListener('click', () => {
+      document.querySelectorAll('#editor input').forEach(inp => { if(!inp.readOnly) inp.value=''; else inp.value=''; });
+      document.getElementById('srcPSelect').value = '';
+      document.getElementById('srcNaClSelect').value = '10';
+      document.getElementById('srcKClSelect').value = '10';
+      document.getElementById('srcLIPSelect').value = 'intralipid';
+      srcCaUnitSelect.value = 'meq';
+      unitCaGlu10.textContent = 'mEq/kg/dia';
+      srcPUnitSelect.value = 'mg';
+      unitDoseP.textContent = 'mg/kg/dia';
+      dosePmgkg.inputMode = 'numeric';
+      dataPrescricao.value = hojeISO();
+      srcMVISelect.value = 'trezevit';
+      srcTESelect.value = 'pedelement';
+      applyTEBrandDefaults();
+      calcVolumes(); atualizarPesoCalorico();
+    });
+```
+
+- [ ] **Step 8: `buildResumo()`**
+
+Mesma troca das Tasks 1-3 — encontre o array `comp` com as linhas `['Oligoelementos', volTE.value, 'ml']` e `['Polivitamínicos — TrezevitAB', volMVI.value, 'ml']` e substitua exatamente como no Task 1 / Step 9 (adicionando `const teLabel = ...` e `const mviLines = ...` antes de `const comp = [`, trocando essas duas linhas por `[teLabel, volTE.value, 'ml']` e `...mviLines`).
+
+- [ ] **Step 9: `camposSalvarIds` — marca a marca escolhida como parte do payload salvo por paciente**
+
+Substitua (por volta da linha 1320):
+
+```js
+    const camposSalvarIds = [...headerFieldIds, ...doseFieldIds, 'srcPSelect','srcNaClSelect','srcKClSelect','srcLIPSelect','srcCaUnitSelect','srcPUnitSelect'];
+```
+
+por:
+
+```js
+    const camposSalvarIds = [...headerFieldIds, ...doseFieldIds, 'srcPSelect','srcNaClSelect','srcKClSelect','srcLIPSelect','srcCaUnitSelect','srcPUnitSelect','srcMVISelect','srcTESelect'];
+```
+
+(`doseTE` já está em `doseFieldIds`, então a dose de Oligoelementos já era salva/restaurada antes desta mudança — isso só adiciona as duas marcas escolhidas.)
+
+- [ ] **Step 10: `preencherFormularioComPayload()` — sincroniza o aviso do Ad-Element sem sobrescrever a dose salva**
+
+Substitua (por volta da linha 1352-1364):
+
+```js
+    function preencherFormularioComPayload(payload){
+      camposSalvarIds.forEach(id => {
+        const el = document.getElementById(id);
+        if (el && Object.prototype.hasOwnProperty.call(payload, id)) el.value = payload[id];
+      });
+      updatePUI();
+      unitCaGlu10.textContent = srcCaUnitSelect.value === 'ml' ? 'mL/kg/dia' : 'mEq/kg/dia';
+      const isMmolP = srcPUnitSelect.value === 'mmol';
+      unitDoseP.textContent = isMmolP ? 'mmol/kg/dia' : 'mg/kg/dia';
+      dosePmgkg.inputMode = isMmolP ? 'decimal' : 'numeric';
+      atualizarPesoCalorico();
+      calcVolumes();
+    }
+```
+
+por:
+
+```js
+    function preencherFormularioComPayload(payload){
+      camposSalvarIds.forEach(id => {
+        const el = document.getElementById(id);
+        if (el && Object.prototype.hasOwnProperty.call(payload, id)) el.value = payload[id];
+      });
+      updatePUI();
+      unitCaGlu10.textContent = srcCaUnitSelect.value === 'ml' ? 'mL/kg/dia' : 'mEq/kg/dia';
+      const isMmolP = srcPUnitSelect.value === 'mmol';
+      unitDoseP.textContent = isMmolP ? 'mmol/kg/dia' : 'mg/kg/dia';
+      dosePmgkg.inputMode = isMmolP ? 'decimal' : 'numeric';
+      syncAdElementNotice();
+      atualizarPesoCalorico();
+      calcVolumes();
+    }
+```
+
+(Deliberadamente `syncAdElementNotice()`, não `applyTEBrandDefaults()` — a dose já foi restaurada pelo `forEach` acima a partir do payload salvo, que pode ter sido ajustada manualmente pelo clínico; só falta sincronizar a visibilidade do aviso de manganês com a marca restaurada.)
+
+- [ ] **Step 11: Init — prescrição nova sempre abre nos defaults fixos (sem preferência de dispositivo)**
+
+Como a marca não usa `prefsGet`/`prefsSet` aqui (ver Step 6), **não precisa adicionar nada no IIFE `init()`** — os dois selects já abrem nos seus defaults do HTML (`trezevit`/`pedelement`, via `selected` nas `<option>`) em qualquer carregamento novo da página, e uma prescrição salva é restaurada via `preencherFormularioComPayload()` (Step 10), não pelo `init()`. Único ajuste: `applyTEBrandDefaults()` precisa rodar uma vez no carregamento pra que `#doseTE` já apareça pré-preenchido com a dose do Ped-Element (mesmo comportamento que as Tasks 1-3 têm) antes de qualquer prescrição ser carregada. Substitua (por volta da linha 1609):
+
+```js
+    (async function init(){
+      if (!dataPrescricao.value) dataPrescricao.value = hojeISO();
+      updatePUI();
+      let allowed = false;
+```
+
+por:
+
+```js
+    (async function init(){
+      if (!dataPrescricao.value) dataPrescricao.value = hojeISO();
+      updatePUI();
+      applyTEBrandDefaults();
+      let allowed = false;
+```
+
+- [ ] **Step 12: Verificação manual**
+
+Não há teste automatizado pra este arquivo. Abra `app-web/index.html` num navegador (`open "app-web/index.html"` — ou sirva localmente se precisar do Supabase/RevenueCat completos; os pontos abaixo não dependem de login) e confirme:
+
+1. Peso vazio → "Polivitamínico (auto)" fica em branco (não "5,0" — confirma que a correção do bug crítico também se aplica aqui).
+2. Peso = `8,5`, Polivitamínico = Polivit B Ped → mostra `5,0`.
+3. Oligoelementos = Oliped 4 → dose pré-preenche `1,00`.
+4. Oligoelementos = Ad-Element → aviso de manganês aparece, dose vira `0,05`.
+5. Clique **Limpar** → (diferente das Tasks 1-3!) os dois selects voltam pro default fixo (Trezevit AB / Ped-Element), e a dose de Oligoelementos volta a mostrar `0,20` (o default do Ped-Element), sem o aviso do Ad-Element.
+6. Polivitamínico = Trezevit AB, peso = `2` → mostra `3,3`. Resumo → duas linhas "Trezevit A"/"Trezevit B".
+7. Se tiver como logar (conta de teste): salve uma prescrição com Ad-Element selecionado e uma dose customizada (ex.: `0,08` em vez do `0,05` padrão), recarregue a página, carregue essa prescrição salva de volta → a marca deve voltar pra Ad-Element, o aviso deve reaparecer, **e a dose deve continuar `0,08`** (não voltar pro default `0,05` da marca) — essa é a checagem específica do `syncAdElementNotice()` do Step 10. Se não tiver conta de teste disponível, documente isso como não verificado e sinalize pro usuário testar manualmente depois.
+
+- [ ] **Step 13: Commit**
+
+```bash
+cd "/Users/felipebarbosa/Desktop/Claude/NPP Calculator"
+git add app-web/index.html
+git commit -m "$(cat <<'EOF'
+Adiciona seletor de marca pro Polivitamínico e Oligoelementos (app-web)
+
+Quarta implementação da mesma mudança (app-mobile, original e
+Electron já feitos) — faltou no plano original por estar desatualizado
+sobre o número de cópias do formulário (CLAUDE.md ainda dizia "duas
+implementações"). Esta é a versão em produção real
+(barbsfelipe.github.io/npp-calculator/app-web/).
+
+Diferente das outras três: a marca escolhida não usa preferência de
+dispositivo (prefsGet/prefsSet) — vira parte do payload salvo por
+paciente (camposSalvarIds), seguindo o padrão que os outros seletores
+de fonte já usam neste arquivo. Por isso o botão Limpar também reseta
+os dois selects pro default fixo, ao contrário das outras três cópias.
+
+Já inclui de origem a correção do bug de calcMVIVol(NaN,...) e do
+Limpar não reaplicar a dose de Oligoelementos, encontrados na revisão
+final do branch.
+
+Co-Authored-By: Claude Sonnet 5 <noreply@anthropic.com>
+EOF
+)"
+```
