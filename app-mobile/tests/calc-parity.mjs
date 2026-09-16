@@ -24,6 +24,8 @@ const SELECTS = {
   '#srcNaClSelect': '10',
   '#srcKClSelect': '10',
   '#srcPSelect': 'gly',
+  '#srcMVISelect': 'polivitb',
+  '#srcTESelect': 'oliped4',
 };
 const INPUTS = {
   '#peso': '8,5',
@@ -68,10 +70,24 @@ async function readOutputs(browser, filePath) {
   return values;
 }
 
+async function checkTEPrefill(browser, filePath) {
+  const page = await browser.newPage();
+  await page.goto('file://' + filePath);
+  await page.click('#btnFecharDisclaimer');
+  await page.selectOption('#srcTESelect', 'oliped4');
+  const prefilled = await page.inputValue('#doseTE');
+  await page.close();
+  assert.equal(
+    prefilled, '1,00',
+    'Selecionar Oliped 4 deveria pré-preencher a dose em 1,00 mL/kg/dia'
+  );
+}
+
 const expectedValues = JSON.parse(readFileSync(EXPECTED_PATH, 'utf8'));
 
 const browser = await chromium.launch();
 const portedValues = await readOutputs(browser, PORTED);
+await checkTEPrefill(browser, PORTED);
 await browser.close();
 
 assert.deepEqual(
@@ -79,4 +95,4 @@ assert.deepEqual(
   expectedValues,
   'Campos calculados de app-mobile/www/index.html divergem do fixture tests/expected-outputs.json'
 );
-console.log('OK —', OUTPUT_FIELDS.length, 'campos calculados batem com o fixture golden.');
+console.log('OK —', OUTPUT_FIELDS.length, 'campos calculados batem com o fixture golden, e o pré-preenchimento de Oligoelementos confere.');
