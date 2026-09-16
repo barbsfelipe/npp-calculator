@@ -6,7 +6,7 @@
 
 **Architecture:** Dois repositórios GitHub Pages separados. `npp-calculator` (existente) não muda. Um repositório novo, `nppcalc-web`, hospeda uma cópia de `app-web/index.html` + `app-web/config.js` na raiz, com `nppcalc.com.br` como domínio customizado. Um workflow do GitHub Actions em `npp-calculator` mantém a cópia em `nppcalc-web` sincronizada automaticamente a cada push no `main` que altere `app-web/`.
 
-**Tech Stack:** GitHub Pages (custom domain, DNS via registro.br), GitHub Actions, `gh` CLI, Supabase Auth (dashboard), RevenueCat Web Billing (dashboard).
+**Tech Stack:** GitHub Pages (custom domain, DNS via Cloudflare — ver nota na Task 3 sobre a migração do DNS gratuito do Registro.br), GitHub Actions, `gh` CLI, Supabase Auth (dashboard), RevenueCat Web Billing / Stripe (dashboard).
 
 ## Global Constraints
 
@@ -116,9 +116,11 @@ Expected: JSON com `"cname":"nppcalc.com.br"` e `"source":{"branch":"main","path
 - Consumes: acesso ao painel de DNS do `nppcalc.com.br` (Task 1), repositório `nppcalc-web` com Pages habilitado (Task 2).
 - Produces: `nppcalc.com.br` resolvendo para o GitHub Pages, com HTTPS válido — necessário para a Task 5 (Supabase/RevenueCat) e Task 6 (verificação end-to-end) fazerem sentido.
 
-- [ ] **Step 1: Adicionar os registros A do domínio apex**
+**Nota de execução (2026-09-16):** o DNS gratuito do Registro.br (`a.auto.dns.br`/`b.auto.dns.br`) apresentou um problema real — os registros ficavam salvos no painel mas nunca eram servidos pelo nameserver autoritativo (confirmado via `dig` direto nele, múltiplas vezes, com o serial da zona mudando sem incluir os registros novos). Migramos o DNS pro **Cloudflare** (nameservers do Cloudflare configurados no Registro.br via "Alterar servidores DNS"), e os registros abaixo foram cadastrados lá em vez de no painel do Registro.br. Mantido como referência de quais registros são necessários, independente do provedor.
 
-No painel de DNS do Registro.br, adicione 4 registros tipo `A` para `nppcalc.com.br` (hostname `@` ou em branco), um pra cada IP:
+- [x] **Step 1: Adicionar os registros A do domínio apex**
+
+No painel de DNS (Cloudflare, `@`, nuvem cinza/"DNS only"), adicione 4 registros tipo `A` para `nppcalc.com.br`, um pra cada IP:
 
 ```
 185.199.108.153
@@ -127,11 +129,11 @@ No painel de DNS do Registro.br, adicione 4 registros tipo `A` para `nppcalc.com
 185.199.111.153
 ```
 
-- [ ] **Step 2: Adicionar o registro CNAME de `www`**
+- [x] **Step 2: Adicionar o registro CNAME de `www`**
 
-Registro tipo `CNAME`, hostname `www`, valor `barbsfelipe.github.io`.
+Registro tipo `CNAME`, hostname `www`, valor `barbsfelipe.github.io`, nuvem cinza/"DNS only".
 
-- [ ] **Step 3: Aguardar propagação e verificar**
+- [x] **Step 3: Aguardar propagação e verificar**
 
 ```bash
 dig nppcalc.com.br +short
