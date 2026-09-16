@@ -79,15 +79,19 @@
     .notice{font-size:12px; color:var(--muted)}
     .notice b{color:#333}
     /* REF-POPOVER:CSS:BEGIN */
-    .ref-btn{display:inline-flex; align-items:center; justify-content:center; width:16px; height:16px; margin-left:4px; border-radius:50%; border:1px solid var(--line); background:var(--surface); color:var(--muted); font-size:11px; line-height:1; cursor:pointer; padding:0; vertical-align:middle;}
-    .ref-btn:hover{background:var(--accent-soft); color:var(--accent-strong); border-color:var(--accent);}
-    #refPopover{display:none; position:fixed; z-index:60; max-width:420px; max-height:70vh; overflow-y:auto; background:var(--surface); border:1px solid var(--line); border-radius:10px; box-shadow:0 8px 24px rgba(0,0,0,.15); font-size:12px;}
-    .ref-popover-head{display:flex; justify-content:space-between; align-items:center; gap:8px; padding:10px 12px; border-bottom:1px solid var(--line); position:sticky; top:0; background:var(--surface);}
+    /* Este arquivo não define --surface/--accent-soft/--accent-strong
+       (só o app-mobile/Electron têm esse tema completo) — usando cores
+       literais aqui pra não cair em var() indefinida (fundo transparente).
+       Azul claro consistente com input[readonly] deste mesmo arquivo. */
+    .ref-btn{display:inline-flex; align-items:center; justify-content:center; width:16px; height:16px; margin-left:4px; border-radius:50%; border:1px solid var(--line); background:#eaf4ff; color:var(--muted); font-size:11px; line-height:1; cursor:pointer; padding:0; vertical-align:middle;}
+    .ref-btn:hover{background:#bcd4f6; color:#003366; border-color:var(--accent);}
+    #refPopover{display:none; position:fixed; z-index:60; max-width:420px; max-height:70vh; overflow-y:auto; background:#eaf4ff; border:1px solid var(--line); border-radius:10px; box-shadow:0 8px 24px rgba(0,0,0,.15); font-size:12px;}
+    .ref-popover-head{display:flex; justify-content:space-between; align-items:center; gap:8px; padding:10px 12px; border-bottom:1px solid var(--line); position:sticky; top:0; background:#eaf4ff;}
     .ref-fechar{border:none; background:none; font-size:16px; cursor:pointer; color:var(--muted); padding:0 4px; line-height:1;}
     .ref-popover-body{padding:8px 12px;}
     .ref-popover-body table{width:100%; border-collapse:collapse;}
     .ref-popover-body td{padding:4px 6px; border-bottom:1px solid var(--line); vertical-align:top;}
-    .ref-highlight{background:var(--accent-soft);}
+    .ref-highlight{background:#bcd4f6;}
     .ref-aviso{margin-top:4px; font-size:11px; color:var(--muted); font-style:italic;}
     .ref-fonte{display:block; margin-top:8px; color:var(--muted); font-size:10.5px;}
     /* REF-POPOVER:CSS:END */
