@@ -10,7 +10,7 @@
 
 ## Global Constraints
 
-- Domínio principal: `nppcalc.com.br` (Registro.br). Domínio secundário: `nppcalc.com`, configurado para redirecionar ao `.com.br` — não recebe hospedagem própria.
+- Domínio: `nppcalc.com.br` (Registro.br). `nppcalc.com` fica de fora desta rodada (decisão de 2026-09-16, ver Task 1) — pode ser registrado depois, sem impacto nas outras tasks.
 - A calculadora PWA grátis (`calculadora_npp_v0_5_8-2.html`, `manifest.json`, `sw.js`, `icons/`) e o repositório `npp-calculator` **não sofrem nenhuma alteração de infraestrutura** (sem CNAME, sem domínio customizado, sem mudança de path).
 - `app-web` deve abrir na **raiz** do domínio novo (`https://nppcalc.com.br/`), não em subcaminho.
 - Repositório novo do GitHub: `barbsfelipe/nppcalc-web`, público, contendo só `index.html`, `config.js` e `CNAME` na raiz.
@@ -20,33 +20,26 @@
 
 ---
 
-### Task 1: Registrar os domínios
+### Task 1: Registrar o domínio
+
+**Decisão (2026-09-16):** registrar só `nppcalc.com.br` por agora. O `nppcalc.com` fica de fora nesta rodada — é puramente defensivo (evitar que terceiros registrem pra confundir clientes), não é necessário pro produto funcionar, e pode ser registrado depois se a marca crescer. Os passos originais de registro/redirect do `.com` (removidos abaixo) continuam válidos como referência se essa decisão mudar no futuro.
 
 **Files:** nenhum (ação fora do repositório).
 
 **Interfaces:**
-- Produces: posse confirmada de `nppcalc.com.br` e `nppcalc.com`, acesso ao painel de DNS de ambos — necessário para a Task 3.
+- Produces: posse confirmada de `nppcalc.com.br`, acesso ao painel de DNS — necessário para a Task 3.
 
 - [ ] **Step 1: Registrar `nppcalc.com.br` no Registro.br**
 
 Acesse `https://registro.br`, busque `nppcalc.com.br`, registre usando o CPF do usuário. Custo aproximado: R$40/ano. Guarde o acesso ao painel (usado na Task 3 para configurar DNS).
 
-- [ ] **Step 2: Registrar `nppcalc.com` num registrador que não exija CPF**
-
-Acesse `https://www.namecheap.com` (ou `https://domains.cloudflare.com`), busque `nppcalc.com`, registre. Custo aproximado: US$12/ano.
-
-- [ ] **Step 3: Configurar `nppcalc.com` para redirecionar a `nppcalc.com.br`**
-
-No painel do registrador do `.com` (Namecheap: seção "Domain" → "Redirect Domain"; Cloudflare: precisa de uma zona + Page Rule/Redirect Rule), configure um redirecionamento 301 de `nppcalc.com` (e `www.nppcalc.com`) para `https://nppcalc.com.br`. Esse passo pode ser feito a qualquer momento depois do registro — não bloqueia as tasks seguintes.
-
-- [ ] **Step 4: Verificar o registro**
+- [ ] **Step 2: Verificar o registro**
 
 ```bash
 whois nppcalc.com.br | head -5
-whois nppcalc.com | head -5
 ```
 
-Esperado: ambos mostram um registrant/status diferente de "available"/"no match" (i.e., o domínio aparece como registrado).
+Esperado: mostra um registrant/status diferente de "available"/"no match" (i.e., o domínio aparece como registrado).
 
 ---
 
