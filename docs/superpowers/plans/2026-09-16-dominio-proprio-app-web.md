@@ -141,7 +141,7 @@ dig nppcalc.com.br +short
 
 Expected: retorna os 4 IPs do Step 1 (pode levar de minutos a ~24h para propagar completamente).
 
-- [ ] **Step 4: Verificar o certificado HTTPS emitido pelo GitHub**
+- [x] **Step 4: Verificar o certificado HTTPS emitido pelo GitHub**
 
 ```bash
 gh api repos/barbsfelipe/nppcalc-web/pages | grep -i https
