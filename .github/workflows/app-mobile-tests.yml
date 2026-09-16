@@ -1,0 +1,54 @@
+name: app-mobile tests
+
+# Roda tests/calc-parity.mjs (o teste de paridade de cálculo) a cada
+# push/PR que mexer em app-mobile — é o único regression guard pras
+# fórmulas clínicas deste repo, e ficou ~2 semanas quebrado sem ninguém
+# notar antes de setembro/2026 por não rodar em lugar nenhum automatizado.
+#
+# Deliberadamente NÃO roda o `npm test` completo (que também inclui
+# trial-gate.mjs e paywall.mjs): paywall.mjs está com uma asserção de
+# preço desatualizada (espera R$49,90, o app mostra R$9,90 — o preço
+# real e atual, confirmado em outros lugares do projeto) — um teste
+# obsoleto, não um bug do app, mas travaria o CI por um motivo alheio
+# ao que este workflow existe pra proteger. Ver se esse teste foi
+# corrigido antes de estender este workflow pra rodar `npm test` inteiro.
+#
+# Também NÃO roda tests/auth-flow.mjs (npm run test:auth): esse faz
+# chamadas reais pro Supabase e cria uma conta de teste descartável a
+# cada execução — não é o tipo de coisa que se quer automatizada num
+# CI público. Ver app-mobile/README.md.
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - "app-mobile/**"
+      - ".github/workflows/app-mobile-tests.yml"
+  pull_request:
+    paths:
+      - "app-mobile/**"
+      - ".github/workflows/app-mobile-tests.yml"
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: app-mobile
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+          cache-dependency-path: app-mobile/package-lock.json
+
+      - run: npm ci
+
+      # playwright-core (usado aqui, não o pacote "playwright" completo)
+      # não baixa navegador nenhum sozinho — precisa desse passo explícito
+      # antes de rodar os testes, que fazem chromium.launch().
+      - run: npx playwright-core install --with-deps chromium
+
+      - run: node tests/calc-parity.mjs
