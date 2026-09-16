@@ -363,6 +363,16 @@
           <input id="volZn" type="text" placeholder="—" readonly />
           <span class="unit" aria-hidden="true">ml</span>
         </div>
+        <div class="field span-12">
+          <label for="srcTESelect">Oligoelementos — marca</label>
+          <select id="srcTESelect">
+            <option value="pedelement" selected>Ped-Element</option>
+            <option value="adelement">Ad-Element</option>
+            <option value="oliped4">Oliped 4</option>
+            <option value="politrace4">Politrace 4</option>
+          </select>
+          <small class="notice" id="avisoAdElement" style="display:none">Mesmo com a dose ajustada, a oferta de manganês fica acima do recomendado.</small>
+        </div>
         <div class="field span-3 unit-wrap">
           <label for="doseTE">Oligoelementos — dose</label>
           <input id="doseTE" type="text" placeholder="0,00" inputmode="decimal" />
@@ -373,9 +383,17 @@
           <input id="volTE" type="text" placeholder="—" readonly />
           <span class="unit" aria-hidden="true">ml</span>
         </div>
+        <div class="field span-12">
+          <label for="srcMVISelect">Polivitamínico — marca</label>
+          <select id="srcMVISelect">
+            <option value="trezevit" selected>Trezevit AB</option>
+            <option value="polivita">Polivit A Ped</option>
+            <option value="polivitb">Polivit B Ped</option>
+          </select>
+        </div>
         <div class="field span-12 unit-wrap">
-          <label for="volMVI">Polivitamínicos — TrezevitAB (auto)</label>
-          <input id="volMVI" type="text" placeholder="2 mL/kg, máx 10 mL" readonly />
+          <label for="volMVI">Polivitamínico (auto)</label>
+          <input id="volMVI" type="text" placeholder="—" readonly />
           <span class="unit" aria-hidden="true">ml</span>
         </div>
         <div class="field span-3 unit-wrap">
@@ -585,7 +603,10 @@
     // Traços/Vit
     const doseSe = document.getElementById('doseSe'), volSe = document.getElementById('volSe');
     const doseZn = document.getElementById('doseZn'), volZn = document.getElementById('volZn');
+    const srcTESelect = document.getElementById('srcTESelect');
+    const avisoAdElement = document.getElementById('avisoAdElement');
     const doseTE = document.getElementById('doseTE'), volTE = document.getElementById('volTE');
+    const srcMVISelect = document.getElementById('srcMVISelect');
     const volMVI = document.getElementById('volMVI');
     const doseGln = document.getElementById('doseGln'), volGln = document.getElementById('volGln');
 
@@ -630,7 +651,39 @@
     }
 
     // ===== Cálculos =====
-    const FACT_NACL10=1.7, FACT_NACL20=3.4, FACT_KCL10=1.34, FACT_KCL191=2.56, FACT_MG10=0.8, FACT_CAGLU10=0.5, FACT_MVI=2, FACT_ZN=230, FACT_SE=60, FACT_GLN=0.2, MG_PER_ML_P=31;
+    const FACT_NACL10=1.7, FACT_NACL20=3.4, FACT_KCL10=1.34, FACT_KCL191=2.56, FACT_MG10=0.8, FACT_CAGLU10=0.5, FACT_ZN=230, FACT_SE=60, FACT_GLN=0.2, MG_PER_ML_P=31;
+    // Polivitamínico e Oligoelementos — dados por marca, verificados contra
+    // bulário ANVISA / literatura científica (ver
+    // docs/superpowers/specs/2026-09-15-marcas-polivitaminico-oligoelementos-design.md).
+    // MVI_BRANDS: 'tier: true' = degrau por faixa de peso (só Trezevit AB,
+    // que é dose fixa por ampola em cada faixa, não fator x peso); as
+    // demais usam 'factor' (mL/kg) x peso, com teto de 1 ampola ('cap').
+    const MVI_BRANDS = {
+      trezevit:  { label: 'Trezevit AB', tier: true },
+      polivita:  { label: 'Polivit A Ped', factor: 4, cap: 10 },
+      polivitb:  { label: 'Polivit B Ped', factor: 2, cap: 5 },
+    };
+    const TE_BRANDS = {
+      pedelement: { label: 'Ped-Element', dose: 0.2 },
+      adelement:  { label: 'Ad-Element', dose: 0.05, notice: true },
+      oliped4:    { label: 'Oliped 4', dose: 1 },
+      politrace4: { label: 'Politrace 4', dose: 0.1 },
+    };
+    function calcMVIVol(P, brandKey){
+      const brand = MVI_BRANDS[brandKey] || MVI_BRANDS.trezevit;
+      if(brand.tier){
+        if(P < 1) return 1.5;
+        if(P < 3) return 3.25;
+        return 5;
+      }
+      return Math.min(P*brand.factor, brand.cap);
+    }
+    function applyTEBrandDefaults(){
+      const brand = TE_BRANDS[srcTESelect.value];
+      if(!brand) return;
+      doseTE.value = f2(brand.dose);
+      avisoAdElement.style.display = brand.notice ? '' : 'none';
+    }
     // Peso atômico do fósforo (~30,97 g/mol) arredondado — mg por mmol de P
     // elementar. Coincide numericamente com MG_PER_ML_P (31 mg de P por mL
     // das soluções de glicerofosfato/fosfato de K), mas são grandezas
@@ -639,7 +692,7 @@
     const MEQ_PER_ML_NA_GLY = 2, MEQ_PER_ML_K_PHOS = 2;
     const LIMIAR_AVISO_PESO = 30, LIMIAR_BLOQUEIO_PESO = 40;
     const doseFieldIds = ['doseH2O','doseAA','doseLIP','doseG50','doseNaCl10','doseKCl10','doseMg10','doseCaGlu10','dosePmgkg','doseSe','doseZn','doseTE','doseGln'];
-    const selectFieldIds = ['srcPSelect','srcNaClSelect','srcKClSelect','srcLIPSelect','srcCaUnitSelect','srcPUnitSelect'];
+    const selectFieldIds = ['srcPSelect','srcNaClSelect','srcKClSelect','srcLIPSelect','srcCaUnitSelect','srcPUnitSelect','srcMVISelect','srcTESelect'];
 
     function safe(n){ return Number.isFinite(n) ? n : 0; }
 
@@ -725,7 +778,7 @@
       const dSe=parseNumberBR(doseSe.value); const SeVol=Number.isFinite(dSe)?(dSe*P)/FACT_SE:NaN; volSe.value=Number.isFinite(SeVol)?formatML(SeVol):'';
       const dZn=parseNumberBR(doseZn.value); const ZnVol=Number.isFinite(dZn)?(dZn*P)/FACT_ZN:NaN; volZn.value=Number.isFinite(ZnVol)?formatML(ZnVol):'';
       const dTE=parseNumberBR(doseTE.value); const TEVol=Number.isFinite(dTE)?dTE*P:NaN; volTE.value=Number.isFinite(TEVol)?formatML(TEVol):'';
-      const MVIVol=Math.min(P*FACT_MVI,10); volMVI.value=formatML(MVIVol);
+      const MVIVol=calcMVIVol(P, srcMVISelect.value); volMVI.value=formatML(MVIVol);
       const dGln=parseNumberBR(doseGln.value); const GlnVol=Number.isFinite(dGln)?(dGln*P)/FACT_GLN:NaN; volGln.value=Number.isFinite(GlnVol)?formatML(GlnVol):'';
 
       // Soma e água destilada — soma os valores JÁ ARREDONDADOS (os mesmos
@@ -833,6 +886,15 @@
     });
     srcNaClSelect.addEventListener('change', calcVolumes);
     srcLIPSelect.addEventListener('change', calcVolumes);
+    srcMVISelect.addEventListener('change', () => {
+      try { localStorage.setItem('mviBrand', srcMVISelect.value); } catch(e) { console.warn('Falha ao salvar marca do polivitamínico:', e); }
+      calcVolumes();
+    });
+    srcTESelect.addEventListener('change', () => {
+      try { localStorage.setItem('teBrand', srcTESelect.value); } catch(e) { console.warn('Falha ao salvar marca do oligoelemento:', e); }
+      applyTEBrandDefaults();
+      calcVolumes();
+    });
     srcCaUnitSelect.addEventListener('change', () => {
       unitCaGlu10.textContent = srcCaUnitSelect.value === 'ml' ? 'mL/kg/dia' : 'mEq/kg/dia';
       calcVolumes();
@@ -882,6 +944,10 @@
         ['Registro', registro.value],
       ].map(([k,v]) => linhaKV(k, v)).join('');
 
+      const teLabel = (TE_BRANDS[srcTESelect.value] || {}).label || 'Oligoelementos';
+      const mviLines = srcMVISelect.value === 'trezevit'
+        ? [['Trezevit A', volMVI.value, 'ml'], ['Trezevit B', volMVI.value, 'ml']]
+        : [[(MVI_BRANDS[srcMVISelect.value] || {}).label || 'Polivitamínico', volMVI.value, 'ml']];
       const comp = [
         ['Oferta hídrica (alvo)', volH2O.value, 'ml'],
         ['Aminoácidos 10%', volAA.value, 'ml'],
@@ -894,8 +960,8 @@
         [srcPSelect.value === 'gly' ? 'Glicerofosfato de sódio' : (srcPSelect.value === 'kphos' ? 'Fosfato de K (2 mEq/mL)' : 'Fósforo'), volP.value, 'ml'],
         ['Selênio', volSe.value, 'ml'],
         ['Zinco', volZn.value, 'ml'],
-        ['Oligoelementos', volTE.value, 'ml'],
-        ['Polivitamínicos — TrezevitAB', volMVI.value, 'ml'],
+        [teLabel, volTE.value, 'ml'],
+        ...mviLines,
         ['Glutamina', volGln.value, 'ml'],
         ['Água destilada', aguaDestilada.value, 'ml'],
       ].filter(([_,v]) => nonEmptyVal(v));
@@ -931,7 +997,20 @@
     const btnFecharDisclaimer = document.getElementById('btnFecharDisclaimer');
     btnFecharDisclaimer.addEventListener('click', () => { overlayDisclaimer.style.display = 'none'; });
 
-    (function init(){ if (!dataPrescricao.value) dataPrescricao.value = hojeISO(); updatePUI(); overlayDisclaimer.style.display = 'flex'; })();
+    (function init(){
+      if (!dataPrescricao.value) dataPrescricao.value = hojeISO();
+      updatePUI();
+      try {
+        const savedMVI = localStorage.getItem('mviBrand');
+        if (savedMVI && MVI_BRANDS[savedMVI]) srcMVISelect.value = savedMVI;
+      } catch (e) { console.warn('Falha ao carregar preferência de marca do polivitamínico:', e); }
+      try {
+        const savedTE = localStorage.getItem('teBrand');
+        if (savedTE && TE_BRANDS[savedTE]) srcTESelect.value = savedTE;
+      } catch (e) { console.warn('Falha ao carregar preferência de marca do oligoelemento:', e); }
+      applyTEBrandDefaults();
+      overlayDisclaimer.style.display = 'flex';
+    })();
 
     if('serviceWorker' in navigator){
       window.addEventListener('load', () => { navigator.serviceWorker.register('sw.js').catch(()=>{}); });
