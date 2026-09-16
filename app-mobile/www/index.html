@@ -70,6 +70,20 @@
     .notice{font-size:12px; color:var(--muted)}
     .notice b{color:var(--fg)}
 
+    /* REF-POPOVER:CSS:BEGIN */
+    .ref-btn{display:inline-flex; align-items:center; justify-content:center; width:16px; height:16px; margin-left:4px; border-radius:50%; border:1px solid var(--line); background:var(--surface); color:var(--muted); font-size:11px; line-height:1; cursor:pointer; padding:0; vertical-align:middle;}
+    .ref-btn:hover{background:var(--accent-soft); color:var(--accent-strong); border-color:var(--accent);}
+    #refPopover{display:none; position:fixed; z-index:60; max-width:420px; max-height:70vh; overflow-y:auto; background:var(--surface); border:1px solid var(--line); border-radius:10px; box-shadow:0 8px 24px rgba(0,0,0,.15); font-size:12px;}
+    .ref-popover-head{display:flex; justify-content:space-between; align-items:center; gap:8px; padding:10px 12px; border-bottom:1px solid var(--line); position:sticky; top:0; background:var(--surface);}
+    .ref-fechar{border:none; background:none; font-size:16px; cursor:pointer; color:var(--muted); padding:0 4px; line-height:1;}
+    .ref-popover-body{padding:8px 12px;}
+    .ref-popover-body table{width:100%; border-collapse:collapse;}
+    .ref-popover-body td{padding:4px 6px; border-bottom:1px solid var(--line); vertical-align:top;}
+    .ref-highlight{background:var(--accent-soft);}
+    .ref-aviso{margin-top:4px; font-size:11px; color:var(--muted); font-style:italic;}
+    .ref-fonte{display:block; margin-top:8px; color:var(--muted); font-size:10.5px;}
+    /* REF-POPOVER:CSS:END */
+
     .section-title{font-size:13px; font-weight:600; margin:26px 0 10px; color:var(--fg); display:flex; align-items:center; gap:8px;}
     .section-title::before{content:""; width:6px; height:6px; border-radius:50%; background:var(--accent); display:inline-block;}
 
@@ -229,7 +243,7 @@
       <div class="section-title">Oferta hídrica & Macronutrientes</div>
       <div class="grid row" id="sec-macro">
         <div class="field span-3 unit-wrap">
-          <label for="doseH2O">Oferta hídrica (dose)</label>
+          <label for="doseH2O">Oferta hídrica (dose) <button type="button" class="ref-btn" data-ref="hidrica" aria-label="Ver referência">?</button></label>
           <input id="doseH2O" type="text" placeholder="0,0" inputmode="decimal" />
           <span class="unit" aria-hidden="true">ml/kg/dia</span>
         </div>
@@ -239,7 +253,7 @@
           <span class="unit" aria-hidden="true">ml</span>
         </div>
         <div class="field span-3 unit-wrap">
-          <label for="doseAA">Aminoácidos 10% (dose)</label>
+          <label for="doseAA">Aminoácidos 10% (dose) <button type="button" class="ref-btn" data-ref="aminoacidos" aria-label="Ver referência">?</button></label>
           <input id="doseAA" type="text" placeholder="0,0" inputmode="decimal" />
           <span class="unit" aria-hidden="true">g/kg/dia</span>
         </div>
@@ -267,7 +281,7 @@
           <span class="unit" aria-hidden="true">ml</span>
         </div>
         <div class="field span-3 unit-wrap">
-          <label for="doseG50">Glicose 50% (dose)</label>
+          <label for="doseG50">Glicose 50% (dose) <button type="button" class="ref-btn" data-ref="glicose" aria-label="Ver referência">?</button></label>
           <input id="doseG50" type="text" placeholder="0,00" inputmode="decimal" />
           <span class="unit" aria-hidden="true">mg/kg/min</span>
         </div>
@@ -291,7 +305,7 @@
           </select>
         </div>
         <div class="field span-3 unit-wrap">
-          <label for="doseNaCl10">Cloreto de sódio (dose)</label>
+          <label for="doseNaCl10">Cloreto de sódio (dose) <button type="button" class="ref-btn" data-ref="naK" aria-label="Ver referência">?</button></label>
           <input id="doseNaCl10" type="text" placeholder="0,0" inputmode="decimal" />
           <span class="unit" aria-hidden="true">mEq/kg/dia</span>
         </div>
@@ -308,7 +322,7 @@
           </select>
         </div>
         <div class="field span-3 unit-wrap">
-          <label for="doseKCl10">Cloreto de potássio (dose)</label>
+          <label for="doseKCl10">Cloreto de potássio (dose) <button type="button" class="ref-btn" data-ref="naK" aria-label="Ver referência">?</button></label>
           <input id="doseKCl10" type="text" placeholder="0,0" inputmode="decimal" />
           <span class="unit" aria-hidden="true">mEq/kg/dia</span>
         </div>
@@ -318,7 +332,7 @@
           <span class="unit" aria-hidden="true">ml</span>
         </div>
         <div class="field span-3 unit-wrap">
-          <label for="doseMg10">Sulfato de magnésio 10% (dose)</label>
+          <label for="doseMg10">Sulfato de magnésio 10% (dose) <button type="button" class="ref-btn" data-ref="caPMg" aria-label="Ver referência">?</button></label>
           <input id="doseMg10" type="text" placeholder="0,0" inputmode="decimal" />
           <span class="unit" aria-hidden="true">mEq/kg/dia</span>
         </div>
@@ -335,7 +349,7 @@
           </select>
         </div>
         <div class="field span-3 unit-wrap">
-          <label for="doseCaGlu10">Gluconato de cálcio 10% (dose)</label>
+          <label for="doseCaGlu10">Gluconato de cálcio 10% (dose) <button type="button" class="ref-btn" data-ref="caPMg" aria-label="Ver referência">?</button></label>
           <input id="doseCaGlu10" type="text" placeholder="0,0" inputmode="decimal" />
           <span class="unit" id="unitCaGlu10" aria-hidden="true">mEq/kg/dia</span>
         </div>
@@ -361,7 +375,7 @@
           </select>
         </div>
         <div class="field span-3 unit-wrap" id="wrapDoseP" style="display:none">
-          <label for="dosePmgkg">Fósforo — dose</label>
+          <label for="dosePmgkg">Fósforo — dose <button type="button" class="ref-btn" data-ref="caPMg" aria-label="Ver referência">?</button></label>
           <input id="dosePmgkg" type="text" placeholder="0" inputmode="numeric" />
           <span class="unit" id="unitDoseP" aria-hidden="true">mg/kg/dia</span>
         </div>
@@ -378,7 +392,7 @@
       <div class="section-title">Micronutrientes — Traços & Vitaminas</div>
       <div class="grid row" id="sec-trace">
         <div class="field span-3 unit-wrap">
-          <label for="doseSe">Selênio (dose)</label>
+          <label for="doseSe">Selênio (dose) <button type="button" class="ref-btn" data-ref="tracos" aria-label="Ver referência">?</button></label>
           <input id="doseSe" type="text" placeholder="0,0" inputmode="decimal" />
           <span class="unit" aria-hidden="true">mcg/kg/dia</span>
         </div>
@@ -388,7 +402,7 @@
           <span class="unit" aria-hidden="true">ml</span>
         </div>
         <div class="field span-3 unit-wrap">
-          <label for="doseZn">Zinco (dose)</label>
+          <label for="doseZn">Zinco (dose) <button type="button" class="ref-btn" data-ref="tracos" aria-label="Ver referência">?</button></label>
           <input id="doseZn" type="text" placeholder="0,00" inputmode="decimal" />
           <span class="unit" aria-hidden="true">mcg/kg/dia</span>
         </div>
@@ -398,7 +412,7 @@
           <span class="unit" aria-hidden="true">ml</span>
         </div>
         <div class="field span-12">
-          <label for="srcTESelect">Oligoelementos — marca</label>
+          <label for="srcTESelect">Oligoelementos — marca <button type="button" class="ref-btn" data-ref="oligoelementos_marca" aria-label="Ver referência">?</button></label>
           <select id="srcTESelect">
             <option value="pedelement" selected>Ped-Element</option>
             <option value="adelement">Ad-Element</option>
@@ -418,7 +432,7 @@
           <span class="unit" aria-hidden="true">ml</span>
         </div>
         <div class="field span-12">
-          <label for="srcMVISelect">Polivitamínico — marca</label>
+          <label for="srcMVISelect">Polivitamínico — marca <button type="button" class="ref-btn" data-ref="polivitaminico_marca" aria-label="Ver referência">?</button></label>
           <select id="srcMVISelect">
             <option value="trezevit" selected>Trezevit AB</option>
             <option value="polivita">Polivit A Ped</option>
@@ -472,7 +486,7 @@
       <div class="section-title">Informativo da Solução</div>
       <div class="grid row" id="sec-info">
         <div class="field span-3 unit-wrap">
-          <label for="kcalTotais">Calorias totais (auto)</label>
+          <label for="kcalTotais">Calorias totais (auto) <button type="button" class="ref-btn" data-ref="informativo" aria-label="Ver referência">?</button></label>
           <input id="kcalTotais" type="text" placeholder="—" readonly />
           <span class="unit" aria-hidden="true">kcal/dia</span>
         </div>
@@ -482,12 +496,12 @@
           <span class="unit" aria-hidden="true">kcal/kg/dia</span>
         </div>
         <div class="field span-3 unit-wrap">
-          <label for="catDiva">Cátions bivalentes (auto)</label>
+          <label for="catDiva">Cátions bivalentes (auto) <button type="button" class="ref-btn" data-ref="informativo" aria-label="Ver referência">?</button></label>
           <input id="catDiva" type="text" placeholder="—" readonly />
           <span class="unit" aria-hidden="true">mEq/L</span>
         </div>
         <div class="field span-3 unit-wrap">
-          <label for="osmolaridade">Osmolaridade estimada (auto)</label>
+          <label for="osmolaridade">Osmolaridade estimada (auto) <button type="button" class="ref-btn" data-ref="informativo" aria-label="Ver referência">?</button></label>
           <input id="osmolaridade" type="text" placeholder="—" readonly />
           <span class="unit" aria-hidden="true">mOsm/L</span>
         </div>
@@ -502,17 +516,17 @@
           <span class="unit" aria-hidden="true">mEq/kg</span>
         </div>
         <div class="field span-3 unit-wrap">
-          <label for="concSolucao">Concentração da solução (auto)</label>
+          <label for="concSolucao">Concentração da solução (auto) <button type="button" class="ref-btn" data-ref="informativo" aria-label="Ver referência">?</button></label>
           <input id="concSolucao" type="text" placeholder="—" readonly />
           <span class="unit" aria-hidden="true">%</span>
         </div>
         <div class="field span-3 unit-wrap">
-          <label for="relCaP">Relação Cálcio:Fósforo (auto)</label>
+          <label for="relCaP">Relação Cálcio:Fósforo (auto) <button type="button" class="ref-btn" data-ref="informativo" aria-label="Ver referência">?</button></label>
           <input id="relCaP" type="text" placeholder="—" readonly />
           <span class="unit" aria-hidden="true">razão</span>
         </div>
         <div class="field span-3 unit-wrap">
-          <label for="relGNKcalNP">Relação gN / Kcal não proteica (auto)</label>
+          <label for="relGNKcalNP">Relação gN / Kcal não proteica (auto) <button type="button" class="ref-btn" data-ref="informativo" aria-label="Ver referência">?</button></label>
           <input id="relGNKcalNP" type="text" placeholder="—" readonly />
           <span class="unit" aria-hidden="true">1 : X</span>
         </div>
@@ -956,6 +970,203 @@
       const relGN = (gAA>0) ? ((kcalNP*6.25)/gAA) : NaN;
       relGNKcalNP.value = Number.isFinite(relGN) ? ('1 : ' + f1(relGN)) : '';
     }
+
+      // REF-POPOVER:JS:BEGIN
+      // Consulta de valores de referência — popovers "?". Fonte dos dados:
+      // ESPGHAN/ESPEN/ESPR/CSPEN 2018 (Clinical Nutrition), verificado
+      // contra as fontes primárias — ver
+      // docs/superpowers/specs/2026-09-16-consulta-valores-referencia-design.md
+      function parseIdadeDias(texto){
+        if(!texto) return NaN;
+        const re = /(\d+(?:[.,]\d+)?)\s*(dias?|d|meses|mes|m|anos?|ano|a)(?=[^a-z]|$)/gi;
+        let total = 0, achou = false, m;
+        while((m = re.exec(texto)) !== null){
+          const n = parseFloat(m[1].replace(',', '.'));
+          const u = m[2].toLowerCase();
+          if(u.startsWith('d')) total += n;
+          else if(u.startsWith('m')) total += n * 30;
+          else if(u.startsWith('a')) total += n * 365;
+          achou = true;
+        }
+        return achou ? total : NaN;
+      }
+
+      const REF_TABLES = {
+        hidrica: {
+          titulo: 'Oferta hídrica — referência por idade/peso',
+          fonte: 'ESPGHAN/ESPEN/ESPR/CSPEN 2018 (Jochum et al., Tabs. 1, 2, 4, 5)',
+          linhas: [
+            { label: 'RN a termo — dia 1 a 5 de vida', valor: '40–60 / 50–70 / 60–80 / 60–100 / 100–140 mL/kg/dia' },
+            { label: 'RN pré-termo >1500g — dia 1 a 5', valor: '60–80 / 80–100 / 100–120 / 120–140 / 140–160 mL/kg/dia' },
+            { label: 'RN pré-termo 1000-1500g — dia 1 a 5', valor: '70–90 / 90–110 / 110–130 / 130–150 / 160–180 mL/kg/dia' },
+            { label: 'RN pré-termo <1000g — dia 1 a 5', valor: '80–100 / 100–120 / 120–140 / 140–160 / 160–180 mL/kg/dia' },
+            { label: 'Fase intermediária — RN a termo', valor: '140–170 mL/kg/dia' },
+            { label: 'Fase intermediária — RN pré-termo', valor: '140–160 mL/kg/dia' },
+            { label: 'Holliday-Segar — primeiros 10kg', valor: '100 mL/kg/dia' },
+            { label: 'Holliday-Segar — 10 a 20kg', valor: '+50 mL/kg extra/dia' },
+            { label: 'Holliday-Segar — acima de 20kg', valor: '+25 mL/kg extra/dia' },
+            { label: '1 mês – 1 ano', valor: '120–150 mL/kg/dia', matches: (ctx) => Number.isFinite(ctx.ageDays) && ctx.ageDays >= 30 && ctx.ageDays < 365 },
+            { label: '1–2 anos', valor: '80–120 mL/kg/dia', matches: (ctx) => Number.isFinite(ctx.ageDays) && ctx.ageDays >= 365 && ctx.ageDays < 730 },
+            { label: '3–5 anos', valor: '80–100 mL/kg/dia', matches: (ctx) => Number.isFinite(ctx.ageDays) && ctx.ageDays >= 1095 && ctx.ageDays < 2190 },
+            { label: '6–12 anos', valor: '60–80 mL/kg/dia', matches: (ctx) => Number.isFinite(ctx.ageDays) && ctx.ageDays >= 2190 && ctx.ageDays < 4745 },
+            { label: '13–18 anos', valor: '50–70 mL/kg/dia', matches: (ctx) => Number.isFinite(ctx.ageDays) && ctx.ageDays >= 4745 },
+          ],
+        },
+        aminoacidos: {
+          titulo: 'Aminoácidos — dose recomendada',
+          fonte: 'ESPGHAN/ESPEN/ESPR/CSPEN 2018 (van Goudoever et al., Tab. 3)',
+          linhas: [
+            { label: 'Prematuro — 1º dia de vida', valor: '1,5 – 2,5 g/kg/dia' },
+            { label: 'Prematuro — a partir do 2º dia', valor: '2,5 – 3,5 g/kg/dia',
+              aviso: 'ASPEN 2023 (Robinson et al., JPEN 2023;47(7):830-858) recomenda não iniciar abaixo de 3 g/kg/dia em prematuros — mais conservadora que a ESPGHAN 2018 usada aqui, que permite iniciar em 1,5.' },
+            { label: 'A termo', valor: '1,5 – 3,0 g/kg/dia' },
+            { label: '2º mês – 3 anos', valor: '1,0 – 2,5 g/kg/dia', matches: (ctx) => Number.isFinite(ctx.ageDays) && ctx.ageDays >= 60 && ctx.ageDays < 1095 },
+            { label: '3 – 18 anos', valor: '1,0 – 2,0 g/kg/dia', matches: (ctx) => Number.isFinite(ctx.ageDays) && ctx.ageDays >= 1095 },
+          ],
+        },
+        glicose: {
+          titulo: 'Glicose — Velocidade de Infusão (VIG)',
+          fonte: 'ESPGHAN/ESPEN/ESPR/CSPEN 2018 (Mesotten et al., R5.4/R5.6)',
+          linhas: [
+            { label: 'RN pré-termo — dia 1', valor: '4 – 8 mg/kg/min' },
+            { label: 'RN pré-termo — dia 2 em diante', valor: 'meta 8–10 (mín 4, máx 12) mg/kg/min' },
+            { label: 'RN a termo — dia 1', valor: '2,5 – 5 mg/kg/min' },
+            { label: 'RN a termo — dia 2 em diante', valor: 'meta 5–10 (mín 2,5, máx 12) mg/kg/min' },
+            { label: '28 dias – 10kg (aguda / estável / recuperação)', valor: '2–4 / 4–6 / 6–10 mg/kg/min', matches: (ctx) => Number.isFinite(ctx.pesoKg) && ctx.pesoKg <= 10 },
+            { label: '11 – 30kg (aguda / estável / recuperação)', valor: '1,5–2,5 / 2–4 / 3–6 mg/kg/min', matches: (ctx) => Number.isFinite(ctx.pesoKg) && ctx.pesoKg > 10 && ctx.pesoKg <= 30 },
+            { label: '31 – 45kg (aguda / estável / recuperação)', valor: '1–1,5 / 1,5–3 / 3–4 mg/kg/min', matches: (ctx) => Number.isFinite(ctx.pesoKg) && ctx.pesoKg > 30 && ctx.pesoKg <= 45 },
+            { label: '>45kg (aguda / estável / recuperação)', valor: '0,5–1 / 1–2 / 2–3 mg/kg/min', matches: (ctx) => Number.isFinite(ctx.pesoKg) && ctx.pesoKg > 45 },
+          ],
+        },
+        naK: {
+          titulo: 'Sódio e Potássio — referência por dia de vida / idade',
+          fonte: 'ESPGHAN/ESPEN/ESPR/CSPEN 2018 (Jochum et al., Tabs. 1, 2, 5)',
+          linhas: [
+            { label: 'RN a termo — dias 1-5', valor: 'Na: 0–2/0–2/0–2/1–3/1–3 · K: 0–3 (d1-3), 2–3 (d4-5) mmol/kg/dia' },
+            { label: 'RN pré-termo >1500g — dias 1-5', valor: 'Na: 0–2(3)/0–2(3)/0–3/2–5/2–5 · K: 0–3 (d1-3), 2–3 (d4-5) mmol/kg/dia' },
+            { label: 'RN pré-termo <1500g — dias 1-5', valor: 'Na: 0–2(3)/0–2(3)/0–5(7)/2–5(7)/2–5(7) · K: 0–3 (d1-3), 2–3 (d4-5) mmol/kg/dia' },
+            { label: 'Fase intermediária — a termo', valor: 'Na 2-3 · K 1–3 mmol/kg/dia' },
+            { label: 'Fase intermediária — pré-termo', valor: 'Na 2-5(7) · K 1–3 mmol/kg/dia' },
+            { label: '1 mês – 1 ano', valor: 'Na 2–3 · K 1–3 mmol/kg/dia', matches: (ctx) => Number.isFinite(ctx.ageDays) && ctx.ageDays >= 30 && ctx.ageDays < 365 },
+            { label: '1–2 anos', valor: 'Na 1–3 · K 1–3 mmol/kg/dia', matches: (ctx) => Number.isFinite(ctx.ageDays) && ctx.ageDays >= 365 && ctx.ageDays < 730 },
+            { label: '3–5 anos', valor: 'Na 1–3 · K 1–3 mmol/kg/dia', matches: (ctx) => Number.isFinite(ctx.ageDays) && ctx.ageDays >= 1095 && ctx.ageDays < 2190 },
+            { label: '6–12 anos', valor: 'Na 1–3 · K 1–3 mmol/kg/dia', matches: (ctx) => Number.isFinite(ctx.ageDays) && ctx.ageDays >= 2190 && ctx.ageDays < 4745 },
+            { label: '13–18 anos', valor: 'Na 1–3 · K 1–3 mmol/kg/dia', matches: (ctx) => Number.isFinite(ctx.ageDays) && ctx.ageDays >= 4745 },
+          ],
+        },
+        caPMg: {
+          titulo: 'Cálcio, Fósforo e Magnésio — referência por idade',
+          fonte: 'ESPGHAN/ESPEN/ESPR/CSPEN 2018 (Mihatsch et al., Tab. 1)',
+          linhas: [
+            { label: 'Prematuro — primeiros dias', valor: 'Ca 0,8–2,0 (32-80mg) · P 1,0–2,0 (31-62mg) · Mg 0,1–0,2 (2,5-5,0mg) /kg/dia' },
+            { label: 'Prematuro — crescimento adequado', valor: 'Ca 1,6–3,5 (100-140mg) · P 1,6–3,5 (77-108mg) · Mg 0,2–0,3 (5,0-7,5mg) /kg/dia' },
+            { label: '0–6 meses', valor: 'Ca 0,8–1,5 (30-60mg) · P 0,7–1,3 (20-40mg) · Mg 0,1–0,2 (2,4-5mg) /kg/dia', matches: (ctx) => Number.isFinite(ctx.ageDays) && ctx.ageDays < 180 },
+            { label: '7–12 meses', valor: 'Ca 0,5 (20mg) · P 0,5 (15mg) · Mg 0,15 (4mg) /kg/dia', matches: (ctx) => Number.isFinite(ctx.ageDays) && ctx.ageDays >= 180 && ctx.ageDays < 365 },
+            { label: '1–18 anos', valor: 'Ca 0,25–0,4 (10-16mg) · P 0,2–0,7 (6-22mg) · Mg 0,1 (2,4mg) /kg/dia', matches: (ctx) => Number.isFinite(ctx.ageDays) && ctx.ageDays >= 365 },
+          ],
+        },
+        tracos: {
+          titulo: 'Oligoelementos — necessidade estimada por idade',
+          fonte: 'ESPGHAN/ESPEN/ESPR 2018 (Domellöf et al., Tab. 1)',
+          linhas: [
+            { label: 'Prematuro', valor: 'Ferro 200-250 · Zinco 400-500 · Cobre 40 · Iodo 1-10 · Selênio 7 · Manganês ≤1 · Molibdênio 1 (µg/kg/dia)' },
+            { label: '0–3 meses', valor: 'Ferro 50-100 · Zinco 250 · Cobre 20 · Iodo 1 · Selênio 2-3 · Manganês ≤1 · Molibdênio 0,25 (µg/kg/dia)', matches: (ctx) => Number.isFinite(ctx.ageDays) && ctx.ageDays < 90 },
+            { label: '3–12 meses', valor: 'Ferro 50-100 · Zinco 100 · Cobre 20 · Iodo 1 · Selênio 2-3 · Manganês ≤1 · Molibdênio 0,25 (µg/kg/dia)', matches: (ctx) => Number.isFinite(ctx.ageDays) && ctx.ageDays >= 90 && ctx.ageDays < 365 },
+            { label: '1–18 anos', valor: 'Ferro 50-100 · Zinco 50 · Cobre 20 · Iodo 1 · Selênio 2-3 · Manganês ≤1 · Molibdênio 0,25 (µg/kg/dia)', matches: (ctx) => Number.isFinite(ctx.ageDays) && ctx.ageDays >= 365 },
+            { label: 'Dose máxima/dia', valor: 'Ferro 5mg · Zinco 5mg · Cobre 0,5mg · Selênio 100µg · Manganês 50µg · Molibdênio 5µg · Cromo 5µg' },
+          ],
+        },
+      };
+
+      function getRefTable(key){
+        if(key === 'oligoelementos_marca'){
+          return {
+            titulo: 'Oligoelementos — dose por marca',
+            fonte: 'Verificado contra bulário ANVISA/literatura — ver docs/superpowers/specs/2026-09-15-marcas-polivitaminico-oligoelementos-design.md',
+            linhas: Object.keys(TE_BRANDS).map(k => ({
+              label: TE_BRANDS[k].label, valor: f2(TE_BRANDS[k].dose) + ' mL/kg/dia',
+              matches: (ctx) => ctx.brandKey === k,
+            })),
+          };
+        }
+        if(key === 'polivitaminico_marca'){
+          return {
+            titulo: 'Polivitamínico — dose por marca',
+            fonte: 'Verificado contra bulário ANVISA/literatura — ver docs/superpowers/specs/2026-09-15-marcas-polivitaminico-oligoelementos-design.md',
+            linhas: Object.keys(MVI_BRANDS).map(k => ({
+              label: MVI_BRANDS[k].label,
+              valor: MVI_BRANDS[k].tier
+                ? '<1kg: 1,5mL A + 1,5mL B · 1-3kg: 3,25+3,25 · ≥3kg: 5+5 (fixo por faixa)'
+                : (MVI_BRANDS[k].factor + ' mL/kg, máx ' + MVI_BRANDS[k].cap + ' mL'),
+              matches: (ctx) => ctx.brandKey === k,
+            })),
+          };
+        }
+        if(key === 'informativo'){
+          return {
+            titulo: 'Parâmetros de prescrição e acompanhamento',
+            fonte: 'Material de referência do usuário — não são recomendações ESPGHAN/ESPEN de nutrição (são de farmacotécnica/compounding, ver nota na spec)',
+            linhas: [
+              { label: 'Cátions divalentes (Ca+Mg)', valor: '<16 mEq/L — acima disso, pode instabilizar a solução' },
+              { label: 'Relação Ca:P', valor: '1,3:1 a 2:1 (mg) — próximo de 2:1 é melhor pra incorporação óssea' },
+              { label: 'Osmolaridade estimada', valor: '<600 mOsm/L periférico · 600-900 periférico com cuidado · >900 obrigatório via central' },
+              { label: 'Relação gN/Kcal não proteica', valor: '100/1–150/1 (estresse metabólico) · 150/1–250/1 (anabolismo). Escala: Hipermetabolismo (1/90) → Anabolismo (1/150) → (1/250).' },
+              { label: 'Concentração de glicose', valor: '>12,5% não deve ser o único critério pra decidir a via periférica/central' },
+              { label: 'Oferta calórica', valor: 'Conferir se as calorias totais/kg batem com a necessidade calculada do paciente' },
+            ],
+          };
+        }
+        return REF_TABLES[key];
+      }
+
+      // #refPopover é inserido no HTML depois do fechamento deste <script>
+      // (ver REF-POPOVER:DIV), então não dá pra guardar a referência num
+      // const de topo (document.getElementById retornaria null nesse ponto
+      // do parsing) — busca lazy a cada uso.
+      function refPopoverEl(){ return document.getElementById('refPopover'); }
+      function fecharPopoverRef(){ const el = refPopoverEl(); if(el) el.style.display = 'none'; }
+      function abrirPopoverRef(anchorEl, tableKey){
+        const table = getRefTable(tableKey);
+        if(!table) return;
+        const el = refPopoverEl();
+        if(!el) return;
+        const ctx = {
+          ageDays: parseIdadeDias(idade.value),
+          pesoKg: parseNumberBR(pesoEl.value),
+          brandKey: tableKey === 'oligoelementos_marca' ? srcTESelect.value : (tableKey === 'polivitaminico_marca' ? srcMVISelect.value : ''),
+        };
+        const linhasHtml = table.linhas.map(l => {
+          const hit = typeof l.matches === 'function' && l.matches(ctx);
+          const cls = hit ? ' class="ref-highlight"' : '';
+          const avisoRow = l.aviso ? `<tr${cls}><td colspan="2"><div class="ref-aviso">${l.aviso}</div></td></tr>` : '';
+          return `<tr${cls}><td>${l.label}</td><td>${l.valor}</td></tr>${avisoRow}`;
+        }).join('');
+        el.innerHTML = `
+          <div class="ref-popover-head">
+            <b>${table.titulo}</b>
+            <button type="button" class="ref-fechar" aria-label="Fechar">×</button>
+          </div>
+          <div class="ref-popover-body">
+            <table>${linhasHtml}</table>
+            <small class="ref-fonte">Fonte: ${table.fonte}</small>
+          </div>`;
+        el.querySelector('.ref-fechar').addEventListener('click', fecharPopoverRef);
+        el.style.display = 'block';
+        const r = anchorEl.getBoundingClientRect();
+        const popRect = el.getBoundingClientRect();
+        let top = r.bottom + 6, left = r.left;
+        if(left + popRect.width > window.innerWidth - 8) left = window.innerWidth - popRect.width - 8;
+        if(top + popRect.height > window.innerHeight - 8) top = r.top - popRect.height - 6;
+        el.style.top = Math.max(8, top) + 'px';
+        el.style.left = Math.max(8, left) + 'px';
+      }
+      document.addEventListener('click', (e) => {
+        const btn = e.target.closest('.ref-btn');
+        if(btn){ e.preventDefault(); abrirPopoverRef(btn, btn.dataset.ref); return; }
+        if(!e.target.closest('#refPopover')) fecharPopoverRef();
+      });
+      document.addEventListener('keydown', (e) => { if(e.key === 'Escape') fecharPopoverRef(); });
+      // REF-POPOVER:JS:END
 
     function addListeners(list){ list.forEach(el => el && el.addEventListener('input', calcVolumes)); }
     pesoEl.addEventListener('input', () => { atualizarPesoCalorico(); calcVolumes(); });
@@ -1442,5 +1653,8 @@
       }
     })();
   </script>
+  <!-- REF-POPOVER:DIV:BEGIN -->
+  <div id="refPopover" role="dialog" aria-label="Referência"></div>
+  <!-- REF-POPOVER:DIV:END -->
 </body>
 </html>

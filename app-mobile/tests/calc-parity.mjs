@@ -159,6 +159,46 @@ async function checkMVIBlankWeight(browser, filePath) {
   await page.close();
 }
 
+async function checkParseIdadeDias(browser, filePath) {
+  const page = await browser.newPage();
+  await page.goto('file://' + filePath);
+  await page.click('#btnFecharDisclaimer');
+  const casos = [
+    ['15 dias', 15], ['3 m', 90], ['2 a', 730], ['2a3m', 820], ['', NaN], ['abc', NaN],
+  ];
+  for (const [texto, esperado] of casos) {
+    const resultado = await page.evaluate((t) => parseIdadeDias(t), texto);
+    if (Number.isNaN(esperado)) {
+      assert.ok(Number.isNaN(resultado), `parseIdadeDias(${JSON.stringify(texto)}) deveria ser NaN, veio ${resultado}`);
+    } else {
+      assert.equal(resultado, esperado, `parseIdadeDias(${JSON.stringify(texto)}) deveria ser ${esperado}, veio ${resultado}`);
+    }
+  }
+  await page.close();
+}
+
+async function checkRefPopoverAminoacidos(browser, filePath) {
+  const page = await browser.newPage();
+  await page.goto('file://' + filePath);
+  await page.click('#btnFecharDisclaimer');
+  await page.fill('#idade', '2 a');
+  await page.click('[data-ref="aminoacidos"]');
+  const highlighted = await page.locator('#refPopover .ref-highlight td').first().innerText();
+  assert.equal(highlighted, '2º mês – 3 anos', `Idade "2 a" deveria destacar a linha "2º mês – 3 anos", destacou "${highlighted}"`);
+  await page.close();
+}
+
+async function checkRefPopoverMarca(browser, filePath) {
+  const page = await browser.newPage();
+  await page.goto('file://' + filePath);
+  await page.click('#btnFecharDisclaimer');
+  await page.selectOption('#srcTESelect', 'adelement');
+  await page.click('[data-ref="oligoelementos_marca"]');
+  const highlighted = await page.locator('#refPopover .ref-highlight td').first().innerText();
+  assert.equal(highlighted, 'Ad-Element', `Marca "adelement" selecionada deveria destacar a linha "Ad-Element", destacou "${highlighted}"`);
+  await page.close();
+}
+
 const expectedValues = JSON.parse(readFileSync(EXPECTED_PATH, 'utf8'));
 
 const browser = await chromium.launch();
@@ -167,6 +207,9 @@ await checkTEPrefill(browser, PORTED);
 await checkTrezevitTiers(browser, PORTED);
 await checkAdElementNotice(browser, PORTED);
 await checkMVIBlankWeight(browser, PORTED);
+await checkParseIdadeDias(browser, PORTED);
+await checkRefPopoverAminoacidos(browser, PORTED);
+await checkRefPopoverMarca(browser, PORTED);
 await browser.close();
 
 assert.deepEqual(
@@ -174,4 +217,4 @@ assert.deepEqual(
   expectedValues,
   'Campos calculados de app-mobile/www/index.html divergem do fixture tests/expected-outputs.json'
 );
-console.log('OK —', OUTPUT_FIELDS.length, 'campos calculados batem com o fixture golden, o pré-preenchimento das 4 marcas de Oligoelementos confere, as 3 faixas de peso do Trezevit AB conferem, o aviso de manganês do Ad-Element aparece/some corretamente, e volMVI fica em branco com peso vazio.');
+console.log('OK —', OUTPUT_FIELDS.length, 'campos calculados batem com o fixture golden, o pré-preenchimento das 4 marcas de Oligoelementos confere, as 3 faixas de peso do Trezevit AB conferem, o aviso de manganês do Ad-Element aparece/some corretamente, volMVI fica em branco com peso vazio, o parser parseIdadeDias interpreta corretamente os formatos de idade, e os popovers de referência destacam a linha certa por idade e por marca selecionada.');
