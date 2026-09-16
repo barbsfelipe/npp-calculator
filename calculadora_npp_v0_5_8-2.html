@@ -670,6 +670,7 @@
       politrace4: { label: 'Politrace 4', dose: 0.1 },
     };
     function calcMVIVol(P, brandKey){
+      if(!Number.isFinite(P)) return NaN;
       const brand = MVI_BRANDS[brandKey] || MVI_BRANDS.trezevit;
       if(brand.tier){
         if(P < 1) return 1.5;
@@ -912,6 +913,7 @@
       unitDoseP.textContent = 'mg/kg/dia';
       dosePmgkg.inputMode = 'numeric';
       dataPrescricao.value = hojeISO();
+      applyTEBrandDefaults();
       calcVolumes(); atualizarPesoCalorico();
     });
 
