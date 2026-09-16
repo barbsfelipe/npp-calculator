@@ -112,11 +112,13 @@ Cada botão "?" no HTML: `<button type="button" class="ref-btn" data-ref="aminoa
 
 **Tab. 3 — Holliday-Segar** (sem dependência de idade — pode destacar por peso normalmente): primeiros 10kg → 100 ml/kg/dia; 10-20kg → +50 ml/kg extra/dia; >20kg → +25 ml/kg extra/dia. Somar A+B+C conforme o peso.
 
-**Tab. 4 — pós-neonatal por idade** (ml/kg/dia): <1 mês 120–150; 1-2 anos 80–120; 3-5 anos 80–100; 6-12 anos 60–80; 13-18 anos 50–70.
+**Tab. 4 — pós-neonatal por idade** (ml/kg/dia): 1 mês – 1 ano 120–150; 1-2 anos 80–120; 3-5 anos 80–100; 6-12 anos 60–80; 13-18 anos 50–70. (Rótulo corrigido pós-verificação contra a fonte primária — Jochum et al. 2018, Tabela 5: a primeira linha é "<1 ano" com a nota "após 1 mês de idade", ou seja, é a faixa 1 mês–1 ano; aplica-se **depois** do período neonatal coberto pelas Tabs. 1-3, não a um RN com menos de 1 mês de vida real.)
 
 ### `aminoacidos` (g/kg/dia) — destaque por idade
 
-Prematuro 1º dia: 1,5–2,5. Prematuro a partir do 2º dia: 2,5–3,5. Termo: 1,5–3,0. 2º mês–3 anos: até 2,5. 3–18 anos: até 2,0.
+Prematuro 1º dia: 1,5–2,5. Prematuro a partir do 2º dia: 2,5–3,5. Termo: 1,5–3,0. 2º mês–3 anos: **1,0–2,5** (piso mínimo adicionado pós-verificação). 3–18 anos: **1,0–2,0** (idem).
+
+Verificado contra a fonte primária (van Goudoever et al. 2018, *Clinical Nutrition*, Tabela 3 + recomendações R3.1-R3.10) — os tetos (2,5 e 2,0) já batiam com o material original, mas faltava o piso de 1,0 g/kg/d que a diretriz também define pras duas faixas (R3.6, R3.8, R3.10) — adicionado agora. Nota à parte (não afeta os números usados aqui, só contexto): a ASPEN 2023 (Robinson et al., *JPEN*) é mais recente e recomenda, especificamente pra prematuros, não descer abaixo de 3 g/kg/dia como alvo — mais agressiva que a ESPGHAN 2018 nesse ponto específico; mantendo a ESPGHAN como fonte principal desta spec, por ser a mesma já usada em todo o resto do material.
 
 ### `glicose` (VIG) — Tab.6 sem destaque (neonatal), Tab.7 destaque por peso
 
@@ -136,19 +138,21 @@ Na (mmol/kg/dia) — dias 1-5, a termo: 0–2, 0–2, 0–2, 1–3, 1–3. Pré-
 
 ### `naK_pos_neonatal` (Tab. 4, mesma idade de `hidrica`) — destaque por idade
 
-Na e K, mmol/kg/dia, por faixa etária: <1 mês → Na 2–3, K 1–3. 1-2 anos → Na 1–3, K 1–3. 3-5 anos → Na 1–3, K 1–3. 6-12 anos → Na 1–3, K 1–3. 13-18 anos → Na 1–3, K 1–3.
+Na e K, mmol/kg/dia, por faixa etária: 1 mês – 1 ano → Na 2–3, K 1–3. 1-2 anos → Na 1–3, K 1–3. 3-5 anos → Na 1–3, K 1–3. 6-12 anos → Na 1–3, K 1–3. 13-18 anos → Na 1–3, K 1–3. (Mesma correção de rótulo do item acima — ver nota da Tab.4 em `hidrica`.)
 
 ### `caPMg` (MgSO4, Gluconato de cálcio, Fósforo — Tab. 11) — destaque por idade, ressalva neonatal
 
 | Faixa | Ca mmol(mg)/kg/d | P mmol(mg)/kg/d | Mg mmol(mg)/kg/d |
 |---|---|---|---|
 | Prematuro, 1ºs dias de vida | 0,8–2,0 (32-80) | 1,0–2,0 (31-62) | 0,1–0,2 (2,5-5,0) |
-| Prematuro, crescimento adequado | 1,6–3,5 (64-140) | 1,6–3,5 (50-108) | 0,2–0,3 (5,0-7,5) |
+| Prematuro, crescimento adequado | 1,6–3,5 (100-140) | 1,6–3,5 (77-108) | 0,2–0,3 (5,0-7,5) |
 | 0–6 meses | 0,8–1,5 (30-60) | 0,7–1,3 (20-40) | 0,1–0,2 (2,4-5) |
 | 7–12 meses | 0,5 (20) | 0,5 (15) | 0,15 (4) |
 | 1–18 anos | 0,25–0,4 (10-16) | 0,2–0,7 (6-22) | 0,1 (2,4) |
 
 (As duas linhas de "prematuro" ficam sem destaque, mesma ressalva de prematuridade não capturada.)
+
+Verificado contra a fonte primária (Mihatsch et al. 2018, *Clinical Nutrition*, Tabela 1) — o mg da linha "prematuro, crescimento adequado" foi corrigido nessa checagem (o material original do usuário tinha 64-140/50-108, provavelmente de uma conversão mmol→mg direta que não bate com o valor impresso na tabela oficial). As demais linhas batem exatamente com a fonte primária.
 
 ### `tracos` (Selênio, Zinco — Tab. 13) — destaque por idade
 
@@ -183,6 +187,8 @@ Lê direto de `MVI_BRANDS` — mesma lógica, 3 marcas (Trezevit AB, Polivit A P
 | (g) Oferta calórica | Calorias totais / Aporte calórico | — (sem faixa numérica fixa, é conferência de adequação) | Verifica se as calorias batem com a necessidade |
 
 (Linha (a), concentração de cálcio isolada mEq/L, fica fora — não existe campo correspondente hoje, conforme decidido.)
+
+**Nota de verificação:** ao contrário das outras tabelas desta spec, estas (cátions divalentes <16mEq/L, relação Ca:P, osmolaridade 600/900, relação C/N) **não fazem parte das diretrizes ESPGHAN/ESPEN de nutrição parenteral pediátrica** — são valores de farmacotécnica/estabilidade de solução, de uma literatura diferente (compounding/farmácia clínica), não da mesma fonte primária usada no resto do material. "Cátions divalentes <16mEq/L" especificamente não foi localizado em nenhuma fonte checada. Decisão do usuário: manter como está (não são necessariamente errados, só vêm de outro tipo de fonte) — não investigar mais a fundo por ora.
 
 ## UI
 
