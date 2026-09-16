@@ -142,6 +142,23 @@ async function checkAdElementNotice(browser, filePath) {
   await page.close();
 }
 
+// calcMVIVol(NaN, 'trezevit') não pode cair por acidente na faixa P>=3kg
+// (NaN < 1 e NaN < 3 são ambos false em JS, então o fluxo cairia no
+// "return 5") — com peso vazio, #volMVI tem que ficar em branco, não "5,0".
+async function checkMVIBlankWeight(browser, filePath) {
+  const page = await browser.newPage();
+  await page.goto('file://' + filePath);
+  await page.click('#btnFecharDisclaimer');
+  await page.selectOption('#srcMVISelect', 'trezevit');
+  await page.fill('#peso', '');
+  const volMVI = await page.inputValue('#volMVI');
+  assert.equal(
+    volMVI, '',
+    'Com peso vazio e marca Trezevit AB, volMVI deveria ficar em branco (não "5,0")'
+  );
+  await page.close();
+}
+
 const expectedValues = JSON.parse(readFileSync(EXPECTED_PATH, 'utf8'));
 
 const browser = await chromium.launch();
@@ -149,6 +166,7 @@ const portedValues = await readOutputs(browser, PORTED);
 await checkTEPrefill(browser, PORTED);
 await checkTrezevitTiers(browser, PORTED);
 await checkAdElementNotice(browser, PORTED);
+await checkMVIBlankWeight(browser, PORTED);
 await browser.close();
 
 assert.deepEqual(
@@ -156,4 +174,4 @@ assert.deepEqual(
   expectedValues,
   'Campos calculados de app-mobile/www/index.html divergem do fixture tests/expected-outputs.json'
 );
-console.log('OK —', OUTPUT_FIELDS.length, 'campos calculados batem com o fixture golden, o pré-preenchimento das 4 marcas de Oligoelementos confere, as 3 faixas de peso do Trezevit AB conferem, e o aviso de manganês do Ad-Element aparece/some corretamente.');
+console.log('OK —', OUTPUT_FIELDS.length, 'campos calculados batem com o fixture golden, o pré-preenchimento das 4 marcas de Oligoelementos confere, as 3 faixas de peso do Trezevit AB conferem, o aviso de manganês do Ad-Element aparece/some corretamente, e volMVI fica em branco com peso vazio.');
