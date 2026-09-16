@@ -159,7 +159,7 @@ Expected: `"https_enforced":true` (pode levar algumas horas depois da propagaç�
 - Consumes: repositório `barbsfelipe/nppcalc-web` já existente (Task 2); secret `NPPCALC_WEB_DEPLOY_TOKEN` no repositório `npp-calculator`.
 - Produces: a cada push em `main` que altere `app-web/index.html` ou `app-web/config.js`, o conteúdo correspondente em `nppcalc-web` é atualizado e commitado automaticamente — é o mecanismo que a Task 6 usa para validar que uma mudança em `app-web/` aparece no domínio novo sem passo manual.
 
-- [ ] **Step 1: Gerar o Personal Access Token (ação manual no GitHub)**
+- [x] **Step 1: Gerar o Personal Access Token (ação manual no GitHub)**
 
 Acesse `https://github.com/settings/personal-access-tokens/new`. Crie um **fine-grained token**:
 - Repository access: "Only select repositories" → `barbsfelipe/nppcalc-web`.
@@ -168,7 +168,7 @@ Acesse `https://github.com/settings/personal-access-tokens/new`. Crie um **fine-
 
 Copie o token gerado (só é exibido uma vez).
 
-- [ ] **Step 2: Salvar o token como secret no repositório `npp-calculator`**
+- [x] **Step 2: Salvar o token como secret no repositório `npp-calculator`**
 
 ```bash
 cd "/Users/felipebarbosa/Desktop/Claude/NPP Calculator"
@@ -177,7 +177,7 @@ gh secret set NPPCALC_WEB_DEPLOY_TOKEN --repo barbsfelipe/npp-calculator
 
 Cole o token quando solicitado.
 
-- [ ] **Step 3: Escrever o workflow**
+- [x] **Step 3: Escrever o workflow**
 
 Criar `.github/workflows/sync-app-web.yml`:
 
@@ -229,7 +229,7 @@ jobs:
           git push
 ```
 
-- [ ] **Step 4: Commitar e enviar o workflow**
+- [x] **Step 4: Commitar e enviar o workflow**
 
 ```bash
 cd "/Users/felipebarbosa/Desktop/Claude/NPP Calculator"
@@ -240,7 +240,7 @@ Co-Authored-By: Claude Sonnet 5 <noreply@anthropic.com>"
 git push
 ```
 
-- [ ] **Step 5: Testar o workflow com uma alteração trivial**
+- [x] **Step 5: Testar o workflow com uma alteração trivial**
 
 ```bash
 cd "/Users/felipebarbosa/Desktop/Claude/NPP Calculator"
@@ -250,7 +250,7 @@ git commit -m "Teste do workflow de sincronização"
 git push
 ```
 
-- [ ] **Step 6: Verificar que o workflow rodou com sucesso**
+- [x] **Step 6: Verificar que o workflow rodou com sucesso**
 
 ```bash
 sleep 30
@@ -259,7 +259,7 @@ gh run list --repo barbsfelipe/npp-calculator --workflow=sync-app-web.yml --limi
 
 Expected: a linha mais recente mostra `completed` / `success`.
 
-- [ ] **Step 7: Verificar que o arquivo mudou em `nppcalc-web` e remover o comentário de teste**
+- [x] **Step 7: Verificar que o arquivo mudou em `nppcalc-web` e remover o comentário de teste**
 
 ```bash
 gh api repos/barbsfelipe/nppcalc-web/contents/index.html --jq '.content' | base64 -d | tail -3
