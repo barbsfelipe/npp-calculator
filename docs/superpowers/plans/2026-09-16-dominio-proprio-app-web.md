@@ -287,7 +287,7 @@ Aguarde o workflow rodar de novo (repita o Step 6) para confirmar que a remoçã
 - Consumes: `nppcalc.com.br` já resolvendo com HTTPS válido (Task 3).
 - Produces: login e checkout funcionando a partir da origem `https://nppcalc.com.br` — necessário para a Task 6.
 
-- [ ] **Step 1: Adicionar o domínio novo nas Redirect URLs do Supabase Auth**
+- [x] **Step 1: Adicionar o domínio novo nas Redirect URLs do Supabase Auth**
 
 Acesse `https://supabase.com/dashboard/project/tawlbzdzpovpfybljkwc/auth/url-configuration`. Em "Redirect URLs", adicione:
 
@@ -298,11 +298,11 @@ https://nppcalc.com.br/**
 
 Mantenha as URLs existentes do `github.io` (não remover). Salve.
 
-- [ ] **Step 2: Adicionar o domínio novo nas origens autorizadas do RevenueCat Web Billing**
+- [x] **Step 2: Adicionar o domínio novo nas origens autorizadas do RevenueCat Web Billing**
 
-Acesse o painel da RevenueCat → app "Calculadora de NPP (RevenueCat Billing)" → Web Billing → configurações de domínio/origem autorizada. Adicione `nppcalc.com.br` à lista. Mantenha a origem existente do `github.io`.
+Correção de execução (2026-09-16): esse cadastro não fica no painel da RevenueCat, fica no **Stripe** (que processa o pagamento por trás do Web Billing) — `https://dashboard.stripe.com/settings/payment_method_domains`, modo Test, "Add a new domain" → `nppcalc.com.br`. Feito e confirmado ("Enabled").
 
-- [ ] **Step 3: Verificar as duas configurações**
+- [x] **Step 3: Verificar as duas configurações**
 
 Não há comando de verificação automatizável aqui — a verificação real acontece na Task 6 (login e checkout end-to-end). Confirme visualmente, antes de prosseguir, que ambas as listas mostram `nppcalc.com.br` salvo.
 
