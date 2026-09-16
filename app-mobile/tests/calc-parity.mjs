@@ -70,17 +70,76 @@ async function readOutputs(browser, filePath) {
   return values;
 }
 
+// Marca -> dose (mL/kg/dia) pré-preenchida esperada em #doseTE (formatada
+// com f2, 2 casas). Valores confirmados rodando a página real (ver relatório
+// da tarefa) antes de serem fixados aqui, e não calculados à mão.
+const TE_PREFILL_EXPECTED = {
+  pedelement: '0,20',
+  adelement: '0,05',
+  oliped4: '1,00',
+  politrace4: '0,10',
+};
+
 async function checkTEPrefill(browser, filePath) {
   const page = await browser.newPage();
   await page.goto('file://' + filePath);
   await page.click('#btnFecharDisclaimer');
-  await page.selectOption('#srcTESelect', 'oliped4');
-  const prefilled = await page.inputValue('#doseTE');
+  for (const [brand, expected] of Object.entries(TE_PREFILL_EXPECTED)) {
+    await page.selectOption('#srcTESelect', brand);
+    const prefilled = await page.inputValue('#doseTE');
+    assert.equal(
+      prefilled, expected,
+      `Selecionar marca de oligoelemento "${brand}" deveria pré-preencher a dose em ${expected} mL/kg/dia`
+    );
+  }
   await page.close();
+}
+
+// Trezevit AB usa degrau fixo por faixa de peso (calcMVIVol em www/index.html),
+// não fator x peso: P<1 -> 1,5 mL; 1<=P<3 -> 3,25 mL; P>=3 -> 5 mL. 3,25
+// formatado com formatML (1 casa) arredonda para "3,3" — confirmado rodando
+// a página real, não calculado à mão (ver relatório da tarefa).
+const TREZEVIT_TIER_EXPECTED = [
+  { peso: '0,5', expected: '1,5' },  // faixa P < 1kg, valor bruto 1,5
+  { peso: '2', expected: '3,3' },    // faixa 1kg <= P < 3kg, valor bruto 3,25
+  { peso: '5', expected: '5,0' },    // faixa P >= 3kg, valor bruto 5
+];
+
+async function checkTrezevitTiers(browser, filePath) {
+  const page = await browser.newPage();
+  await page.goto('file://' + filePath);
+  await page.click('#btnFecharDisclaimer');
+  await page.selectOption('#srcMVISelect', 'trezevit');
+  for (const { peso, expected } of TREZEVIT_TIER_EXPECTED) {
+    await page.fill('#peso', peso);
+    const volMVI = await page.inputValue('#volMVI');
+    assert.equal(
+      volMVI, expected,
+      `Trezevit AB com peso ${peso}kg deveria calcular volMVI = ${expected} mL`
+    );
+  }
+  await page.close();
+}
+
+async function checkAdElementNotice(browser, filePath) {
+  const page = await browser.newPage();
+  await page.goto('file://' + filePath);
+  await page.click('#btnFecharDisclaimer');
+  const aviso = page.locator('#avisoAdElement');
+
+  await page.selectOption('#srcTESelect', 'adelement');
   assert.equal(
-    prefilled, '1,00',
-    'Selecionar Oliped 4 deveria pré-preencher a dose em 1,00 mL/kg/dia'
+    await aviso.isVisible(), true,
+    'Selecionar Ad-Element deveria exibir o aviso de manganês (#avisoAdElement)'
   );
+
+  await page.selectOption('#srcTESelect', 'pedelement');
+  assert.equal(
+    await aviso.isVisible(), false,
+    'Selecionar Ped-Element deveria esconder o aviso de manganês (#avisoAdElement)'
+  );
+
+  await page.close();
 }
 
 const expectedValues = JSON.parse(readFileSync(EXPECTED_PATH, 'utf8'));
@@ -88,6 +147,8 @@ const expectedValues = JSON.parse(readFileSync(EXPECTED_PATH, 'utf8'));
 const browser = await chromium.launch();
 const portedValues = await readOutputs(browser, PORTED);
 await checkTEPrefill(browser, PORTED);
+await checkTrezevitTiers(browser, PORTED);
+await checkAdElementNotice(browser, PORTED);
 await browser.close();
 
 assert.deepEqual(
@@ -95,4 +156,4 @@ assert.deepEqual(
   expectedValues,
   'Campos calculados de app-mobile/www/index.html divergem do fixture tests/expected-outputs.json'
 );
-console.log('OK —', OUTPUT_FIELDS.length, 'campos calculados batem com o fixture golden, e o pré-preenchimento de Oligoelementos confere.');
+console.log('OK —', OUTPUT_FIELDS.length, 'campos calculados batem com o fixture golden, o pré-preenchimento das 4 marcas de Oligoelementos confere, as 3 faixas de peso do Trezevit AB conferem, e o aviso de manganês do Ad-Element aparece/some corretamente.');
