@@ -663,6 +663,9 @@
     const f0 = (n)=>formatNumberBR(n,0);
     const f1 = (n)=>formatNumberBR(n,1);
     const f2 = (n)=>formatNumberBR(n,2);
+    // Até 2 casas decimais, cortando zero à direita desnecessário
+    // (0,20→0,2, 1,00→1), sem arredondar o valor — 0,05 continua 0,05.
+    const f2Trim = (n)=> Number.isFinite(n) ? n.toLocaleString('pt-BR', {minimumFractionDigits:0, maximumFractionDigits:2}) : '';
 
     // ===== Referências de campos =====
     const pesoEl = document.getElementById('peso');
@@ -778,7 +781,7 @@
     function applyTEBrandDefaults(){
       const brand = TE_BRANDS[srcTESelect.value];
       if(!brand) return;
-      doseTE.value = f2(brand.dose);
+      doseTE.value = f2Trim(brand.dose);
       avisoAdElement.style.display = brand.notice ? '' : 'none';
     }
     // Peso atômico do fósforo (~30,97 g/mol) arredondado — mg por mmol de P
@@ -1084,7 +1087,7 @@
             titulo: 'Oligoelementos — dose por marca',
             fonte: 'Verificado contra bulário ANVISA/literatura — ver docs/superpowers/specs/2026-09-15-marcas-polivitaminico-oligoelementos-design.md',
             linhas: Object.keys(TE_BRANDS).map(k => ({
-              label: TE_BRANDS[k].label, valor: f2(TE_BRANDS[k].dose) + ' mL/kg/dia',
+              label: TE_BRANDS[k].label, valor: f2Trim(TE_BRANDS[k].dose) + ' mL/kg/dia',
               matches: (ctx) => ctx.brandKey === k,
             })),
           };
