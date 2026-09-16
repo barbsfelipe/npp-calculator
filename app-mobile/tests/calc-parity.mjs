@@ -71,13 +71,14 @@ async function readOutputs(browser, filePath) {
 }
 
 // Marca -> dose (mL/kg/dia) pré-preenchida esperada em #doseTE (formatada
-// com f2, 2 casas). Valores confirmados rodando a página real (ver relatório
-// da tarefa) antes de serem fixados aqui, e não calculados à mão.
+// com f2Trim: até 2 casas, cortando zero à direita desnecessário — 0,20→0,2,
+// 1,00→1, mas 0,05 não vira 0,1). Valores confirmados rodando a página real
+// antes de serem fixados aqui, e não calculados à mão.
 const TE_PREFILL_EXPECTED = {
-  pedelement: '0,20',
+  pedelement: '0,2',
   adelement: '0,05',
-  oliped4: '1,00',
-  politrace4: '0,10',
+  oliped4: '1',
+  politrace4: '0,1',
 };
 
 async function checkTEPrefill(browser, filePath) {

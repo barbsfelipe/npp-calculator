@@ -2,7 +2,7 @@ import type { CapacitorConfig } from '@capacitor/cli';
 
 const config: CapacitorConfig = {
   appId: 'com.npp.calculadora',
-  appName: 'Calculadora de NPP',
+  appName: 'NPPCalc',
   webDir: 'www'
 };
 
