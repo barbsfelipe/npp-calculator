@@ -29,11 +29,11 @@
 **Interfaces:**
 - Produces: posse confirmada de `nppcalc.com.br`, acesso ao painel de DNS — necessário para a Task 3.
 
-- [ ] **Step 1: Registrar `nppcalc.com.br` no Registro.br**
+- [x] **Step 1: Registrar `nppcalc.com.br` no Registro.br**
 
 Acesse `https://registro.br`, busque `nppcalc.com.br`, registre usando o CPF do usuário. Custo aproximado: R$40/ano. Guarde o acesso ao painel (usado na Task 3 para configurar DNS).
 
-- [ ] **Step 2: Verificar o registro**
+- [x] **Step 2: Verificar o registro**
 
 ```bash
 whois nppcalc.com.br | head -5
@@ -54,7 +54,7 @@ Esperado: mostra um registrant/status diferente de "available"/"no match" (i.e.,
 - Consumes: nenhuma dependência de código do `npp-calculator` além de copiar os dois arquivos existentes `app-web/index.html` e `app-web/config.js` como estão.
 - Produces: repositório `barbsfelipe/nppcalc-web` no GitHub, com Pages habilitado e domínio customizado configurado — necessário para a Task 3 (DNS aponta pra ele) e Task 4 (o workflow de sync faz push nele).
 
-- [ ] **Step 1: Montar o diretório local do novo repositório**
+- [x] **Step 1: Montar o diretório local do novo repositório**
 
 ```bash
 mkdir -p /tmp/nppcalc-web
@@ -65,7 +65,7 @@ cp "/Users/felipebarbosa/Desktop/Claude/NPP Calculator/app-web/config.js" .
 echo "nppcalc.com.br" > CNAME
 ```
 
-- [ ] **Step 2: Commit inicial**
+- [x] **Step 2: Commit inicial**
 
 ```bash
 git add -A
@@ -74,7 +74,7 @@ git commit -m "Import inicial de app-web/ do repositório npp-calculator
 Co-Authored-By: Claude Sonnet 5 <noreply@anthropic.com>"
 ```
 
-- [ ] **Step 3: Criar o repositório no GitHub e fazer push**
+- [x] **Step 3: Criar o repositório no GitHub e fazer push**
 
 ```bash
 gh repo create barbsfelipe/nppcalc-web --public --source=. --remote=origin --push
@@ -82,7 +82,7 @@ gh repo create barbsfelipe/nppcalc-web --public --source=. --remote=origin --pus
 
 Expected: comando termina sem erro e imprime a URL `https://github.com/barbsfelipe/nppcalc-web`.
 
-- [ ] **Step 4: Habilitar GitHub Pages com domínio customizado**
+- [x] **Step 4: Habilitar GitHub Pages com domínio customizado**
 
 ```bash
 gh api -X POST repos/barbsfelipe/nppcalc-web/pages \
@@ -98,7 +98,7 @@ gh api -X POST repos/barbsfelipe/nppcalc-web/pages -f "source[branch]=main" -f "
 gh api -X PUT repos/barbsfelipe/nppcalc-web/pages -f "cname=nppcalc.com.br"
 ```
 
-- [ ] **Step 5: Verificar a configuração do Pages**
+- [x] **Step 5: Verificar a configuração do Pages**
 
 ```bash
 gh api repos/barbsfelipe/nppcalc-web/pages
