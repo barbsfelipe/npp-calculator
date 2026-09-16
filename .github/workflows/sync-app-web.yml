@@ -1,0 +1,45 @@
+name: Sync app-web to nppcalc-web
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - 'app-web/index.html'
+      - 'app-web/config.js'
+
+jobs:
+  sync:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout npp-calculator (source files)
+        uses: actions/checkout@v4
+        with:
+          sparse-checkout: |
+            app-web/index.html
+            app-web/config.js
+          sparse-checkout-cone-mode: false
+
+      - name: Checkout nppcalc-web (deploy target)
+        uses: actions/checkout@v4
+        with:
+          repository: barbsfelipe/nppcalc-web
+          token: ${{ secrets.NPPCALC_WEB_DEPLOY_TOKEN }}
+          path: nppcalc-web
+
+      - name: Copy updated files
+        run: |
+          cp app-web/index.html nppcalc-web/index.html
+          cp app-web/config.js nppcalc-web/config.js
+
+      - name: Commit and push if changed
+        working-directory: nppcalc-web
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git add index.html config.js
+          if git diff --cached --quiet; then
+            echo "No changes to sync."
+            exit 0
+          fi
+          git commit -m "Sync app-web from npp-calculator (${GITHUB_SHA})"
+          git push
