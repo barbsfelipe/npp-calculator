@@ -142,16 +142,16 @@
     #end-actions{display:flex; justify-content:flex-end; gap:10px; margin-top:22px}
 
     /* ===== Resumo de Prescrição ===== */
-    #overlayResumo, #overlayDisclaimer, #overlayAuth, #overlayPaywall, #overlayHistorico{
+    #overlayResumo, #overlayDisclaimer, #overlayAuth, #overlayPaywall, #overlayHistorico, #overlayAcessoLiberado{
       position: fixed; inset: 0; background: rgba(0,0,0,.35);
       display:none; align-items: center; justify-content: center; padding: 24px;
       z-index: 9999;
     }
-    #resumoCard, #disclaimerCard, #authCard, #paywallCard, #historicoCard{
+    #resumoCard, #disclaimerCard, #authCard, #paywallCard, #historicoCard, #acessoLiberadoCard{
       width: 210mm; max-width: 100%; background: #fff; border-radius: 14px; box-shadow:0 20px 60px rgba(0,0,0,.25);
       padding: 18mm; max-height: 90vh; overflow: auto;
     }
-    #disclaimerCard, #authCard, #paywallCard, #historicoCard{width:120mm}
+    #disclaimerCard, #authCard, #paywallCard, #historicoCard, #acessoLiberadoCard{width:120mm}
     #resumoCard h2, #disclaimerCard h2, #authCard h2, #paywallCard h2, #historicoCard h2{margin:0 0 8px 0; font-size:18px}
     #resumoCard .muted{color:#666; font-size:12px; margin-bottom:12px}
     .resumo-sec{margin-top:14px}
@@ -183,7 +183,7 @@
       <h1>Prescrição de Nutrição Parenteral (NPP)</h1>
       <div class="sub">Layout de prescrição hospitalar — versão 0.5.4</div>
       <div id="accountBar" class="sub" style="display:none">
-        <span id="accountEmail"></span> · <button type="button" id="btnLogout" class="link-btn" style="display:inline; margin:0">Sair</button>
+        <span id="accountEmail"></span> · <button type="button" id="btnLogout" class="link-btn" style="display:inline; margin:0">Sair</button> · <button type="button" id="btnAdminAcesso" class="link-btn" style="display:none; margin:0">Gerenciar acesso liberado</button>
       </div>
       <div class="bar" aria-hidden="true"></div>
 
@@ -583,6 +583,32 @@
       <div id="historicoLista" style="margin-top:14px"></div>
       <div class="resumo-actions">
         <button type="button" class="secondary" id="btnFecharHistorico">Fechar</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Overlay Admin — acesso liberado manual -->
+  <div id="overlayAcessoLiberado" role="dialog" aria-modal="true" aria-labelledby="acessoLiberadoTitulo">
+    <div id="acessoLiberadoCard">
+      <h2 id="acessoLiberadoTitulo">Acesso liberado manual</h2>
+      <div class="muted">E-mails nesta lista usam o app sem precisar de assinatura ativa.</div>
+      <div class="grid row" style="margin-top:14px">
+        <div class="field span-12">
+          <label for="acessoLiberadoEmail">E-mail</label>
+          <input id="acessoLiberadoEmail" type="email" placeholder="pessoa@exemplo.com" />
+        </div>
+        <div class="field span-12">
+          <label for="acessoLiberadoMotivo">Motivo (opcional)</label>
+          <input id="acessoLiberadoMotivo" type="text" placeholder="Ex.: cortesia, revisor, teste" />
+        </div>
+      </div>
+      <div id="acessoLiberadoErro" class="sub" style="color:var(--danger); display:none"></div>
+      <div class="resumo-actions">
+        <button type="button" id="btnAcessoLiberadoAdicionar">Liberar acesso</button>
+      </div>
+      <div id="acessoLiberadoLista" style="margin-top:14px"></div>
+      <div class="resumo-actions">
+        <button type="button" class="secondary" id="btnFecharAcessoLiberado">Fechar</button>
       </div>
     </div>
   </div>
@@ -1565,6 +1591,22 @@
     // Confere sessão + assinatura e mostra o overlay certo (login ou
     // paywall). Só retorna true quando o app pode ser liberado — o aviso
     // legal ainda entra depois disso, se for a 1ª vez.
+    const ADMIN_EMAIL = 'felipebarbosamd@gmail.com';
+    async function hasAcessoLiberado(email) {
+      if (!supabaseClient || !email) return false;
+      try {
+        const { data, error } = await supabaseClient
+          .from('npp_acesso_liberado')
+          .select('email')
+          .eq('email', email)
+          .maybeSingle();
+        if (error) { console.warn('Erro ao checar acesso liberado:', error); return false; }
+        return !!data;
+      } catch (e) {
+        console.warn('Falha de rede ao checar acesso liberado:', e);
+        return false;
+      }
+    }
     async function checkAccess() {
       const session = await getCurrentSession().catch((e) => {
         console.warn('Falha ao checar sessão do Supabase:', e);
@@ -1580,12 +1622,14 @@
       overlayAuth.style.display = 'none';
       accountEmail.textContent = session.user.email || '';
       accountBar.style.display = 'block';
+      btnAdminAcesso.style.display = (session.user.email === ADMIN_EMAIL) ? 'inline' : 'none';
       try {
         await configurePurchases(session.user.id);
       } catch (e) {
         console.warn('Falha ao configurar o RevenueCat Web Billing:', e);
       }
-      if (await window.hasActiveSubscription()) {
+      const liberado = await hasAcessoLiberado(session.user.email);
+      if (liberado || await window.hasActiveSubscription()) {
         overlayPaywall.style.display = 'none';
         return true;
       }
@@ -1890,6 +1934,70 @@
       overlayHistorico.style.display = 'flex';
     });
     document.getElementById('btnFecharHistorico').addEventListener('click', () => { overlayHistorico.style.display = 'none'; });
+
+    // ===== Admin — acesso liberado manual =====
+    const btnAdminAcesso = document.getElementById('btnAdminAcesso');
+    const overlayAcessoLiberado = document.getElementById('overlayAcessoLiberado');
+    const acessoLiberadoLista = document.getElementById('acessoLiberadoLista');
+    const acessoLiberadoEmail = document.getElementById('acessoLiberadoEmail');
+    const acessoLiberadoMotivo = document.getElementById('acessoLiberadoMotivo');
+    const acessoLiberadoErro = document.getElementById('acessoLiberadoErro');
+
+    function mostrarErroAcessoLiberado(msg) {
+      acessoLiberadoErro.textContent = msg;
+      acessoLiberadoErro.style.display = 'block';
+    }
+    function esconderErroAcessoLiberado() {
+      acessoLiberadoErro.style.display = 'none';
+    }
+
+    async function carregarListaAcessoLiberado() {
+      acessoLiberadoLista.innerHTML = '<div class="muted">Carregando…</div>';
+      try {
+        const { data, error } = await supabaseClient
+          .from('npp_acesso_liberado')
+          .select('email, motivo, created_at')
+          .order('created_at', { ascending: false });
+        if (error) { acessoLiberadoLista.innerHTML = ''; mostrarErroAcessoLiberado('Não foi possível carregar a lista.'); return; }
+        if (!data.length) { acessoLiberadoLista.innerHTML = '<div class="muted">Nenhum e-mail liberado ainda.</div>'; return; }
+        acessoLiberadoLista.innerHTML = data.map(row => `
+          <div class="kv"><div><b>${escapeHtml(row.email)}</b>${row.motivo ? ' — ' + escapeHtml(row.motivo) : ''}
+          <button type="button" class="link-btn acesso-liberado-remover" data-email="${escapeHtml(row.email)}" style="margin-left:8px">Remover</button></div></div>
+        `).join('');
+        acessoLiberadoLista.querySelectorAll('.acesso-liberado-remover').forEach(botao => {
+          botao.addEventListener('click', async () => {
+            esconderErroAcessoLiberado();
+            const email = botao.dataset.email;
+            const { error } = await supabaseClient.from('npp_acesso_liberado').delete().eq('email', email);
+            if (error) { mostrarErroAcessoLiberado('Não foi possível remover.'); return; }
+            await carregarListaAcessoLiberado();
+          });
+        });
+      } catch (e) {
+        acessoLiberadoLista.innerHTML = '';
+        mostrarErroAcessoLiberado('Falha de rede ao carregar a lista.');
+      }
+    }
+
+    btnAdminAcesso.addEventListener('click', async () => {
+      esconderErroAcessoLiberado();
+      acessoLiberadoEmail.value = '';
+      acessoLiberadoMotivo.value = '';
+      overlayAcessoLiberado.style.display = 'flex';
+      await carregarListaAcessoLiberado();
+    });
+    document.getElementById('btnFecharAcessoLiberado').addEventListener('click', () => { overlayAcessoLiberado.style.display = 'none'; });
+    document.getElementById('btnAcessoLiberadoAdicionar').addEventListener('click', async () => {
+      esconderErroAcessoLiberado();
+      const email = acessoLiberadoEmail.value.trim().toLowerCase();
+      if (!email) { mostrarErroAcessoLiberado('Digite um e-mail.'); return; }
+      const motivo = acessoLiberadoMotivo.value.trim() || null;
+      const { error } = await supabaseClient.from('npp_acesso_liberado').insert({ email, motivo });
+      if (error) { mostrarErroAcessoLiberado('Não foi possível liberar esse e-mail — confira se já não está na lista.'); return; }
+      acessoLiberadoEmail.value = '';
+      acessoLiberadoMotivo.value = '';
+      await carregarListaAcessoLiberado();
+    });
 
     (async function init(){
       if (!dataPrescricao.value) dataPrescricao.value = hojeISO();
