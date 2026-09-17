@@ -939,7 +939,12 @@
       // ≠ arredondado-da-soma, propriedade matemática esperada mas confusa
       // na hora de conferir na mão).
       const arred1 = (v) => Number.isFinite(v) ? (parseNumberBR(formatML(v)) || 0) : 0;
-      const soma = arred1(AA)+arred1(LIP)+arred1(G50)+arred1(NaVol)+arred1(KVol)+arred1(MgVol)+arred1(CaVol)+arred1(PVol)+arred1(SeVol)+arred1(ZnVol)+arred1(TEVol)+arred1(MVIVol)+arred1(GlnVol);
+      // Trezevit AB é dose PAREADA (A + B, mesmo volume cada — ver
+      // calcMVIVol/mviLines) — o volMVI calculado é o volume de CADA parte,
+      // então a bolsa recebe 2x esse valor fisicamente. As demais marcas
+      // (Polivit A/B Ped) são produto único, sem parear, então ficam em 1x.
+      const MVIVolSoma = arred1(MVIVol) * (srcMVISelect.value === 'trezevit' ? 2 : 1);
+      const soma = arred1(AA)+arred1(LIP)+arred1(G50)+arred1(NaVol)+arred1(KVol)+arred1(MgVol)+arred1(CaVol)+arred1(PVol)+arred1(SeVol)+arred1(ZnVol)+arred1(TEVol)+MVIVolSoma+arred1(GlnVol);
       somaComponentes.value = formatML(soma);
       const agua = Number.isFinite(Vtotal_mL) ? (Vtotal_mL - soma) : NaN;
       // Água destilada negativa é matematicamente correta (soma dos

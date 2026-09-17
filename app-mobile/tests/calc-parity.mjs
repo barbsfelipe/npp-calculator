@@ -122,6 +122,39 @@ async function checkTrezevitTiers(browser, filePath) {
   await page.close();
 }
 
+// Regressão de bug real (2026-09-17): Trezevit AB é dose PAREADA (A + B,
+// mesmo volume cada — ver calcMVIVol/mviLines), mas "Soma dos componentes"
+// contava #volMVI só uma vez, subestimando a soma e superestimando "Água
+// destilada" em exatamente 1x o volMVI sempre que Trezevit (a marca padrão)
+// estava selecionada. Pego numa prescrição real por uma farmacêutica, que
+// conferiu a soma na mão e achou 5 mL de diferença. Zera #doseTE pra isolar
+// a contribuição do MVI na soma (peso preenchido pré-preenche #doseTE via
+// applyTEBrandDefaults, o que senão entraria na conta).
+async function checkTrezevitSomaDouble(browser, filePath) {
+  const page = await browser.newPage();
+  await page.goto('file://' + filePath);
+  await page.click('#btnFecharDisclaimer');
+  await page.fill('#peso', '30');
+  await page.selectOption('#srcMVISelect', 'trezevit');
+  await page.fill('#doseTE', '');
+  const volMVI = await page.inputValue('#volMVI');
+  const soma = await page.inputValue('#somaComponentes');
+  assert.equal(volMVI, '5,0', 'Trezevit AB com peso 30kg deveria calcular volMVI (por parte) = 5,0 mL');
+  assert.equal(
+    soma, '10,0',
+    'Trezevit AB (A + B) deveria contar 2x o volMVI na Soma dos componentes (5,0 x 2 = 10,0), não 1x'
+  );
+
+  // Marca de produto único (sem par A/B) não deve dobrar.
+  await page.selectOption('#srcMVISelect', 'polivita');
+  const volMVI2 = await page.inputValue('#volMVI');
+  const soma2 = await page.inputValue('#somaComponentes');
+  assert.equal(volMVI2, '10,0', 'Polivit A Ped com peso 30kg deveria calcular volMVI = 10,0 mL (4 mL/kg, teto 10)');
+  assert.equal(soma2, '10,0', 'Marca de produto único (Polivit A Ped) não deveria dobrar na Soma dos componentes');
+
+  await page.close();
+}
+
 async function checkAdElementNotice(browser, filePath) {
   const page = await browser.newPage();
   await page.goto('file://' + filePath);
@@ -206,6 +239,7 @@ const browser = await chromium.launch();
 const portedValues = await readOutputs(browser, PORTED);
 await checkTEPrefill(browser, PORTED);
 await checkTrezevitTiers(browser, PORTED);
+await checkTrezevitSomaDouble(browser, PORTED);
 await checkAdElementNotice(browser, PORTED);
 await checkMVIBlankWeight(browser, PORTED);
 await checkParseIdadeDias(browser, PORTED);
@@ -218,4 +252,4 @@ assert.deepEqual(
   expectedValues,
   'Campos calculados de app-mobile/www/index.html divergem do fixture tests/expected-outputs.json'
 );
-console.log('OK —', OUTPUT_FIELDS.length, 'campos calculados batem com o fixture golden, o pré-preenchimento das 4 marcas de Oligoelementos confere, as 3 faixas de peso do Trezevit AB conferem, o aviso de manganês do Ad-Element aparece/some corretamente, volMVI fica em branco com peso vazio, o parser parseIdadeDias interpreta corretamente os formatos de idade, e os popovers de referência destacam a linha certa por idade e por marca selecionada.');
+console.log('OK —', OUTPUT_FIELDS.length, 'campos calculados batem com o fixture golden, o pré-preenchimento das 4 marcas de Oligoelementos confere, as 3 faixas de peso do Trezevit AB conferem, a Soma dos componentes conta 2x o Trezevit AB (dose pareada) e não dobra marca de produto único, o aviso de manganês do Ad-Element aparece/some corretamente, volMVI fica em branco com peso vazio, o parser parseIdadeDias interpreta corretamente os formatos de idade, e os popovers de referência destacam a linha certa por idade e por marca selecionada.');
