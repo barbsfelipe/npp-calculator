@@ -316,19 +316,19 @@ Não há comando de verificação automatizável aqui — a verificação real a
 - Consumes: todas as tasks anteriores completas.
 - Produces: confirmação de que o domínio novo está pronto pra uso real, e de que o `npp-calculator`/calculadora grátis não foram afetados.
 
-- [ ] **Step 1: Testar login no domínio novo**
+- [x] **Step 1: Testar login no domínio novo**
 
 Abra `https://nppcalc.com.br` num navegador, faça login com uma conta de teste existente. Expected: login funciona sem erro de redirect/CORS.
 
-- [ ] **Step 2: Testar uma prescrição de ponta a ponta**
+- [x] **Step 2: Testar uma prescrição de ponta a ponta**
 
 Preencha uma prescrição de teste, use "Salvar prescrição", reabra pela busca por nome. Expected: comportamento idêntico ao já validado em `barbsfelipe.github.io/npp-calculator/app-web/`.
 
-- [ ] **Step 3: Testar o checkout sandbox do RevenueCat**
+- [x] **Step 3: Testar o checkout sandbox do RevenueCat**
 
 Dispare o fluxo de assinatura/paywall e complete um checkout de teste (chave `rcb_sb_...` = sandbox, conforme `app-web/config.js:10` — não é cobrança real). Expected: checkout completa e o app reconhece o acesso liberado.
 
-- [ ] **Step 4: Confirmar que o `npp-calculator` original não mudou**
+- [x] **Step 4: Confirmar que o `npp-calculator` original não mudou**
 
 ```bash
 curl -Is https://barbsfelipe.github.io/npp-calculator/calculadora_npp_v0_5_8-2.html | head -1
@@ -337,7 +337,7 @@ curl -Is https://barbsfelipe.github.io/npp-calculator/app-web/ | head -1
 
 Expected: ambos retornam `HTTP/2 200`, exatamente como antes desta mudança — nenhum redirecionamento pro domínio novo.
 
-- [ ] **Step 5: Atualizar a memória do projeto**
+- [x] **Step 5: Atualizar a memória do projeto**
 
 Depois de tudo verificado, atualizar (não recriar) o arquivo de memória `project_dominio-app-web.md` marcando a migração como concluída, com a URL final e a data.
 
