@@ -279,7 +279,7 @@
           <small class="notice">Mesma concentração (200 mg/mL) e valor calórico (2 kcal/mL) — a escolha só muda o nome exibido no resumo/impressão.</small>
         </div>
         <div class="field span-3 unit-wrap">
-          <label for="doseLIP">Lipídeos 20% (dose)</label>
+          <label for="doseLIP">Lipídeos 20% (dose) <button type="button" class="ref-btn" data-ref="lipideos" aria-label="Ver referência">?</button></label>
           <input id="doseLIP" type="text" placeholder="0,00" inputmode="decimal" />
           <span class="unit" aria-hidden="true">g/kg/dia</span>
         </div>
@@ -1126,6 +1126,16 @@
             { label: '3–12 meses', valor: 'Ferro 50-100 · Zinco 100 · Cobre 20 · Iodo 1 · Selênio 2-3 · Manganês ≤1 · Molibdênio 0,25 (µg/kg/dia)', matches: (ctx) => Number.isFinite(ctx.ageDays) && ctx.ageDays >= 90 && ctx.ageDays < 365 },
             { label: '1–18 anos', valor: 'Ferro 50-100 · Zinco 50 · Cobre 20 · Iodo 1 · Selênio 2-3 · Manganês ≤1 · Molibdênio 0,25 (µg/kg/dia)', matches: (ctx) => Number.isFinite(ctx.ageDays) && ctx.ageDays >= 365 },
             { label: 'Dose máxima/dia', valor: 'Ferro 5mg · Zinco 5mg · Cobre 0,5mg · Selênio 100µg · Manganês 50µg · Molibdênio 5µg · Cromo 5µg' },
+          ],
+        },
+        lipideos: {
+          titulo: 'Lipídeos — referência de dose',
+          fonte: 'ESPGHAN/ESPEN/ESPR/CSPEN 2018 (Lapillonne et al., R4.2-R4.6)',
+          linhas: [
+            { label: 'Prematuros e recém-nascidos a termo — dose máxima', valor: 'até 4 g/kg/dia' },
+            { label: 'Crianças — dose máxima', valor: 'até 3 g/kg/dia' },
+            { label: 'Dose mínima p/ evitar déficit de ácidos graxos essenciais — prematuros', valor: '0,25 g/kg/dia' },
+            { label: 'Dose mínima p/ evitar déficit de ácidos graxos essenciais — termo/crianças', valor: '0,1 g/kg/dia' },
           ],
         },
       };
