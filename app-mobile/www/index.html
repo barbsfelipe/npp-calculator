@@ -583,7 +583,7 @@
   <div id="overlayPaywall" role="dialog" aria-modal="true" aria-labelledby="paywallTitulo">
     <div id="paywallCard">
       <h2 id="paywallTitulo">Seu período gratuito acabou</h2>
-      <p>Você já usou as 3 prescrições grátis. Escolha um plano para continuar usando a calculadora sem limites.</p>
+      <p>Você já usou as 2 prescrições grátis. Escolha um plano para continuar usando a calculadora sem limites.</p>
       <div id="paywallStatus" class="sub" style="color:var(--danger); display:none"></div>
       <div class="grid row">
         <div class="field span-6">
@@ -1560,9 +1560,9 @@
       }
     });
 
-    // ===== Trial gratuito (3 prescrições) =====
+    // ===== Trial gratuito (2 prescrições) =====
     const TRIAL_KEY = 'trialUsageCount';
-    const TRIAL_LIMIT = 3;
+    const TRIAL_LIMIT = 2;
     const overlayPaywall = document.getElementById('overlayPaywall');
 
     window.hasActiveSubscription = async function hasActiveSubscription() {

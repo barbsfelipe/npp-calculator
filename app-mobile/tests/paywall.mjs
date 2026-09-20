@@ -16,8 +16,8 @@ const page = await browser.newPage();
 await page.goto('file://' + PAGE);
 await page.click('#btnFecharDisclaimer');
 
-// Esgota o trial pra forçar o paywall aparecer.
-await page.click('#btnLimpar');
+// Esgota o trial pra forçar o paywall aparecer (abertura=1, Limpar=2,
+// próxima tentativa é bloqueada — TRIAL_LIMIT=2).
 await page.click('#btnLimpar');
 await page.click('#btnLimpar');
 await page.waitForSelector('#overlayPaywall', { state: 'visible' });
