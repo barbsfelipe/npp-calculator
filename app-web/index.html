@@ -160,9 +160,9 @@
     #resumoCard .muted{color:#666; font-size:12px; margin-bottom:12px}
     .resumo-sec{margin-top:14px}
     .resumo-sec h3{font-size:13px; margin:8px 0}
-    .kv{display:grid; grid-template-columns: 1fr 1fr; column-gap:16px; row-gap:6px; font-size:13px}
-    .kv div{display:flex; justify-content:space-between; gap:10px; border-bottom:1px dashed #e6e6e6; padding:4px 0}
-    .kv div b{white-space:nowrap}
+    .kv{display:grid; grid-template-columns: minmax(0,1fr) minmax(0,1fr); column-gap:16px; row-gap:6px; font-size:13px}
+    .kv div{display:flex; justify-content:space-between; gap:10px; border-bottom:1px dashed #e6e6e6; padding:4px 0; min-width:0}
+    .kv div b{text-align:right}
     .chips{display:flex; flex-wrap:wrap; gap:6px}
     .chip{background:#f2f4f7; border:1px solid #e6e6e6; padding:6px 10px; border-radius:999px; font-size:12px}
 

@@ -154,9 +154,9 @@
     #resumoCard .muted{color:var(--muted); font-size:12px; margin-bottom:12px}
     .resumo-sec{margin-top:14px}
     .resumo-sec h3{font-size:13px; margin:8px 0; color:var(--fg);}
-    .kv{display:grid; grid-template-columns: 1fr 1fr; column-gap:16px; row-gap:6px; font-size:13px}
-    .kv div{display:flex; justify-content:space-between; gap:10px; border-bottom:1px dashed var(--line); padding:4px 0}
-    .kv div b{white-space:nowrap}
+    .kv{display:grid; grid-template-columns: minmax(0,1fr) minmax(0,1fr); column-gap:16px; row-gap:6px; font-size:13px}
+    .kv div{display:flex; justify-content:space-between; gap:10px; border-bottom:1px dashed var(--line); padding:4px 0; min-width:0}
+    .kv div b{text-align:right}
     .chips{display:flex; flex-wrap:wrap; gap:6px}
     .chip{background:var(--accent-soft); border:1px solid #d3e6e3; padding:6px 10px; border-radius:999px; font-size:12px; color:var(--accent-strong);}
 
