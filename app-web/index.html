@@ -449,7 +449,7 @@
           </select>
         </div>
         <div class="field span-12 unit-wrap">
-          <label for="volMVI">Polivitamínico (auto)</label>
+          <label for="volMVI" id="labelVolMVI">Polivitamínico (auto)</label>
           <input id="volMVI" type="text" placeholder="—" readonly />
           <span class="unit" aria-hidden="true">ml</span>
         </div>
@@ -746,6 +746,7 @@
     const doseTE = document.getElementById('doseTE'), volTE = document.getElementById('volTE');
     const srcMVISelect = document.getElementById('srcMVISelect');
     const volMVI = document.getElementById('volMVI');
+    const labelVolMVI = document.getElementById('labelVolMVI');
     const doseGln = document.getElementById('doseGln'), volGln = document.getElementById('volGln');
 
     // Totais
@@ -926,6 +927,12 @@
       const dZn=parseNumberBR(doseZn.value); const ZnVol=Number.isFinite(dZn)?(dZn*P)/FACT_ZN:NaN; volZn.value=Number.isFinite(ZnVol)?formatML(ZnVol):'';
       const dTE=parseNumberBR(doseTE.value); const TEVol=Number.isFinite(dTE)?dTE*P:NaN; volTE.value=Number.isFinite(TEVol)?formatML(TEVol):'';
       const MVIVol=calcMVIVol(P, srcMVISelect.value); volMVI.value=formatML(MVIVol);
+      // Trezevit AB é dose pareada (A + B, mesmo volume cada — ver
+      // calcMVIVol/mviLines/MVIVolSoma) — deixa isso explícito no rótulo
+      // pra não parecer que o valor exibido já é o total combinado.
+      labelVolMVI.textContent = srcMVISelect.value === 'trezevit'
+        ? 'Polivitamínico (auto) — mL de A e de B, cada'
+        : 'Polivitamínico (auto)';
       const dGln=parseNumberBR(doseGln.value); const GlnVol=Number.isFinite(dGln)?(dGln*P)/FACT_GLN:NaN; volGln.value=Number.isFinite(GlnVol)?formatML(GlnVol):'';
 
       // Soma e água destilada — soma os valores JÁ ARREDONDADOS (os mesmos
