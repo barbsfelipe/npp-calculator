@@ -181,7 +181,7 @@
       <h1>Prescrição de Nutrição Parenteral (NPP)</h1>
       <div class="sub">Layout de prescrição hospitalar</div>
       <div id="accountBar" class="sub" style="display:none">
-        <span id="accountEmail"></span> · <button type="button" id="btnLogout" class="link-btn" style="display:inline; margin:0">Sair</button>
+        <span id="accountEmail"></span> · <button type="button" id="btnLogout" class="link-btn" style="display:inline; margin:0">Sair</button> · <button type="button" id="btnExcluirConta" class="link-btn" style="display:inline; margin:0">Excluir conta</button>
       </div>
       <div class="bar" aria-hidden="true"></div>
 
@@ -1443,6 +1443,35 @@
         try { await supabaseClient.auth.signOut(); } catch (e) { console.warn('Erro ao sair:', e); }
       }
       window.location.reload(); // mais simples e seguro que zerar cada variável de estado (purchasesConfigured etc.) na mão
+    });
+
+    // Excluir conta (Guideline 5.1.1(v) da Apple: apps com criação de conta
+    // precisam permitir excluir a conta direto pelo app). Chama a função
+    // delete_own_account() no Supabase (SECURITY DEFINER — ver
+    // supabase/delete_own_account.sql), que apaga o usuário em auth.users.
+    // Não cancela a assinatura na Apple — isso é gerenciado separadamente
+    // pelo usuário em Ajustes do iPhone, como é padrão em apps iOS.
+    const btnExcluirConta = document.getElementById('btnExcluirConta');
+    btnExcluirConta.addEventListener('click', async () => {
+      if (!supabaseClient) {
+        alert('Sem conexão — não é possível excluir a conta agora. Tente novamente mais tarde.');
+        return;
+      }
+      const ok = window.confirm(
+        'Tem certeza que quer excluir sua conta? Essa ação não pode ser desfeita.\n\n' +
+        'Isso NÃO cancela uma assinatura ativa na App Store — gerencie isso em Ajustes do iPhone > seu nome > Assinaturas, se necessário.'
+      );
+      if (!ok) return;
+      try {
+        const { error } = await supabaseClient.rpc('delete_own_account');
+        if (error) throw error;
+        try { await supabaseClient.auth.signOut(); } catch (e) { /* usuário já foi apagado, ignora erro de signOut */ }
+        alert('Conta excluída com sucesso.');
+        window.location.reload();
+      } catch (e) {
+        console.warn('Erro ao excluir conta:', e);
+        alert('Não foi possível excluir a conta agora. Tente novamente mais tarde.');
+      }
     });
 
     const paywallStatus = document.getElementById('paywallStatus');
