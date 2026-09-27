@@ -52,8 +52,8 @@ Deno.serve(async (req) => {
       mode: 'payment',
       line_items: [{ price: priceId, quantity: 1 }],
       customer_email: user.email,
-      success_url: `${SITE_URL}/app-web/?checkout=success`,
-      cancel_url: `${SITE_URL}/app-web/?checkout=cancel`,
+      success_url: `${SITE_URL}/?checkout=success`,
+      cancel_url: `${SITE_URL}/?checkout=cancel`,
       metadata: { email: user.email, supabase_user_id: user.id },
     });
 
