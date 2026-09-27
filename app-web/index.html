@@ -10,7 +10,6 @@
        na raiz do repo). Ver docs/superpowers/specs/2026-08-17-npp-calculadora-app-pago-design.md
        ("Plano 3"). -->
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.js"></script>
-  <script src="https://unpkg.com/@revenuecat/purchases-js@1.53.1/dist/Purchases.umd.js"></script>
   <script src="config.js"></script>
   <style>
     :root{
@@ -658,19 +657,16 @@
   <!-- Overlay Paywall (logado, sem assinatura ativa) -->
   <div id="overlayPaywall" role="dialog" aria-modal="true" aria-labelledby="paywallTitulo">
     <div id="paywallCard">
-      <h2 id="paywallTitulo">Assine para continuar</h2>
-      <p>Sua conta ainda não tem uma assinatura ativa. Escolha um plano para usar a calculadora no navegador — a mesma assinatura libera o app do celular.</p>
+      <h2 id="paywallTitulo">Adquira o acesso vitalício</h2>
+      <p>Sua conta ainda não tem acesso liberado. Pagamento único, sem mensalidade — libera o uso da calculadora pra sempre.</p>
       <div id="paywallStatus" class="sub" style="color:var(--danger); display:none"></div>
       <div class="grid row">
-        <div class="field span-6">
-          <button type="button" id="btnPlanoMensal" style="width:100%">Mensal — R$9,90/mês</button>
-        </div>
-        <div class="field span-6">
-          <button type="button" id="btnPlanoAnual" style="width:100%">Anual — R$79,90/ano (R$6,66/mês)</button>
+        <div class="field span-12">
+          <button type="button" id="btnComprarVitalicio" style="width:100%">Comprar acesso vitalício — R$69,90</button>
         </div>
       </div>
       <div class="resumo-actions">
-        <button type="button" class="secondary" id="btnVerificarAssinatura">Já assinei — verificar de novo</button>
+        <button type="button" class="secondary" id="btnVerificarAssinatura">Já paguei — verificar de novo</button>
       </div>
     </div>
   </div>
@@ -1526,83 +1522,53 @@
       await checkAccess();
     });
 
-    // ===== Assinatura (RevenueCat Web Billing) =====
-    // O SDK vem via CDN (unpkg, build UMD) — sem bundler. Nessa build a
-    // global exposta é "Purchases" e a classe de verdade fica em
-    // Purchases.Purchases (confirmado no fórum da RevenueCat: a build ESM do
-    // pacote npm expõe Purchases.configure() direto, mas a UMD do <script>
-    // expõe um objeto-namespace cuja propriedade .Purchases é a classe).
-    let purchasesConfigured = false;
-    let purchasesUserId = null;
-    async function configurePurchases(appUserId) {
-      const apiKey = window.NPP_CONFIG.revenueCatApiKeyWeb;
-      if (!apiKey || apiKey === 'PENDENTE_REVENUECAT_WEB_BILLING') {
-        console.warn('RevenueCat Web Billing não configurado: chave ainda pendente em config.js');
-        return;
-      }
-      if (purchasesConfigured && purchasesUserId === appUserId) return; // já configurado pra essa conta
-      if (!window.Purchases || !window.Purchases.Purchases) {
-        console.warn('SDK do RevenueCat Web Billing indisponível (biblioteca não carregou).');
-        return;
-      }
-      window.Purchases.Purchases.configure({ apiKey, appUserId });
-      purchasesConfigured = true;
-      purchasesUserId = appUserId;
-    }
-
-    window.hasActiveSubscription = async function hasActiveSubscription() {
-      if (!purchasesConfigured) return false;
-      // Uma falha aqui (rede caiu, RevenueCat fora do ar) não pode travar o
-      // app inteiro — sem confirmação, trata como não-assinante (mais
-      // seguro: nunca libera de graça por engano).
-      try {
-        const customerInfo = await window.Purchases.Purchases.getSharedInstance().getCustomerInfo();
-        return Object.keys(customerInfo.entitlements.active).length > 0;
-      } catch (e) {
-        console.warn('Não foi possível checar a assinatura (RevenueCat):', e);
-        return false;
-      }
-    };
-
-    async function purchasePlan(plan) {
+    // ===== Compra vitalícia (Stripe Checkout, pagamento único) =====
+    // Sem SDK do Stripe no cliente — a Edge Function "create-checkout-session"
+    // cria a sessão no servidor (com a chave secreta, nunca exposta aqui) e
+    // devolve só a URL; o navegador é redirecionado direto pra ela. Depois
+    // do pagamento, o Stripe chama a Edge Function "stripe-webhook" (server
+    // a server, sem passar pelo navegador do cliente) que libera o acesso
+    // inserindo o email em npp_acesso_liberado — a mesma tabela que
+    // hasAcessoLiberado() já checa logo abaixo.
+    async function iniciarCompraVitalicia() {
       hidePaywallStatus();
-      if (!purchasesConfigured) {
-        showPaywallStatus('Assinatura indisponível no momento — tente de novo mais tarde.');
-        return;
-      }
       try {
-        const offerings = await window.Purchases.Purchases.getSharedInstance().getOfferings();
-        const current = offerings.current;
-        if (!current) {
-          showPaywallStatus('Nenhum plano disponível no momento. Tente de novo mais tarde.');
+        const session = await getCurrentSession();
+        if (!session) {
+          showPaywallStatus('Sessão expirada — recarregue a página e faça login de novo.');
           return;
         }
-        const pkg = plan === 'monthly' ? current.monthly : current.annual;
-        if (!pkg) {
-          showPaywallStatus('Esse plano não está disponível no momento.');
+        const resp = await fetch(
+          `${window.NPP_CONFIG.supabaseUrl}/functions/v1/create-checkout-session`,
+          {
+            method: 'POST',
+            headers: {
+              'Authorization': `Bearer ${session.access_token}`,
+              'apikey': window.NPP_CONFIG.supabaseAnonKey,
+            },
+          },
+        );
+        const data = await resp.json();
+        if (!resp.ok || !data.url) {
+          showPaywallStatus('Não foi possível iniciar a compra. Tente novamente em instantes.');
           return;
         }
-        await window.Purchases.Purchases.getSharedInstance().purchase({ rcPackage: pkg });
-        if (await window.hasActiveSubscription()) {
-          overlayPaywall.style.display = 'none';
-          if ((await prefsGet(DISCLAIMER_KEY)) !== '1') { overlayDisclaimer.style.display = 'flex'; }
-        } else {
-          showPaywallStatus('Pagamento não confirmado ainda. Toque em "Já assinei — verificar de novo" em alguns instantes.');
-        }
+        window.location.href = data.url; // redireciona pro Stripe Checkout
       } catch (e) {
-        console.warn('Erro ao processar assinatura:', e);
-        showPaywallStatus('Não foi possível concluir a assinatura. Tente novamente.');
+        console.warn('Erro ao iniciar compra:', e);
+        showPaywallStatus('Não foi possível iniciar a compra. Tente novamente.');
       }
     }
-    document.getElementById('btnPlanoMensal').addEventListener('click', () => purchasePlan('monthly'));
-    document.getElementById('btnPlanoAnual').addEventListener('click', () => purchasePlan('annual'));
+    document.getElementById('btnComprarVitalicio').addEventListener('click', iniciarCompraVitalicia);
     document.getElementById('btnVerificarAssinatura').addEventListener('click', async () => {
       hidePaywallStatus();
-      if (await window.hasActiveSubscription()) {
+      const session = await getCurrentSession().catch(() => null);
+      const liberado = session ? await hasAcessoLiberado(session.user.email) : false;
+      if (liberado) {
         overlayPaywall.style.display = 'none';
         if ((await prefsGet(DISCLAIMER_KEY)) !== '1') { overlayDisclaimer.style.display = 'flex'; }
       } else {
-        showPaywallStatus('Ainda não encontramos uma assinatura ativa nessa conta.');
+        showPaywallStatus('Ainda não encontramos o pagamento nessa conta. Se você acabou de pagar, aguarde alguns segundos e tente de novo.');
       }
     });
 
@@ -1615,7 +1581,7 @@
       if (supabaseClient) {
         try { await supabaseClient.auth.signOut(); } catch (e) { console.warn('Erro ao sair:', e); }
       }
-      window.location.reload(); // mais simples e seguro que zerar cada variável de estado (purchasesConfigured etc.) na mão
+      window.location.reload(); // mais simples e seguro que zerar cada variável de estado na mão
     });
     // Confere sessão + assinatura e mostra o overlay certo (login ou
     // paywall). Só retorna true quando o app pode ser liberado — o aviso
@@ -1652,13 +1618,8 @@
       accountEmail.textContent = session.user.email || '';
       accountBar.style.display = 'block';
       btnAdminAcesso.style.display = (session.user.email === ADMIN_EMAIL) ? 'inline' : 'none';
-      try {
-        await configurePurchases(session.user.id);
-      } catch (e) {
-        console.warn('Falha ao configurar o RevenueCat Web Billing:', e);
-      }
       const liberado = await hasAcessoLiberado(session.user.email);
-      if (liberado || await window.hasActiveSubscription()) {
+      if (liberado) {
         overlayPaywall.style.display = 'none';
         return true;
       }
@@ -1765,7 +1726,7 @@
     // uma falha de rede mais séria (ex.: DNS fora do ar) pode rejeitar de
     // verdade, e isso não pode virar uma exceção não tratada estourando
     // dentro de um listener assíncrono (mesma garantia de não travar o
-    // app que o resto do arquivo já segue pro RevenueCat/Supabase Auth).
+    // app que o resto do arquivo já segue pro Stripe/Supabase Auth).
     async function buscarPacientesSalvos(termo){
       if (!supabaseClient || !currentUserId || !termo || termo.trim().length < 2) return [];
       try {
@@ -2028,6 +1989,37 @@
       await carregarListaAcessoLiberado();
     });
 
+    // Volta do Stripe Checkout (?checkout=success|cancel na URL). O
+    // webhook do Stripe libera o acesso de forma assíncrona (server a
+    // server), então pode não ter processado ainda no exato momento em
+    // que o navegador volta — tenta de novo por alguns segundos antes de
+    // desistir, em vez de mostrar "não encontramos o pagamento" na cara
+    // de quem acabou de pagar.
+    async function handleCheckoutReturn() {
+      const params = new URLSearchParams(window.location.search);
+      const checkout = params.get('checkout');
+      if (!checkout) return;
+      history.replaceState(null, '', window.location.pathname); // limpa a URL
+
+      if (checkout !== 'success') return;
+
+      const session = await getCurrentSession().catch(() => null);
+      if (!session) return;
+
+      showPaywallStatus('Confirmando seu pagamento...');
+      for (let tentativa = 0; tentativa < 6; tentativa++) {
+        await new Promise((r) => setTimeout(r, 2000));
+        if (await hasAcessoLiberado(session.user.email)) {
+          hidePaywallStatus();
+          overlayPaywall.style.display = 'none';
+          const accepted = await prefsGet(DISCLAIMER_KEY).catch(() => null);
+          if (accepted !== '1') { overlayDisclaimer.style.display = 'flex'; }
+          return;
+        }
+      }
+      showPaywallStatus('Pagamento recebido, mas ainda confirmando o acesso — toque em "Já paguei — verificar de novo" em instantes.');
+    }
+
     (async function init(){
       if (!dataPrescricao.value) dataPrescricao.value = hojeISO();
       updatePUI();
@@ -2044,6 +2036,8 @@
           return null;
         });
         if (accepted !== '1') { overlayDisclaimer.style.display = 'flex'; }
+      } else {
+        try { await handleCheckoutReturn(); } catch (e) { console.warn('Falha ao confirmar volta do checkout:', e); }
       }
     })();
   </script>

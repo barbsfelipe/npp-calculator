@@ -3,3 +3,4 @@ CLAUDE.md
 .DS_Store
 .playwright-mcp/
 .superpowers/
+*.p8
