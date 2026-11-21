@@ -5,10 +5,16 @@
   <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
   <title>Calculadora de NPP — Prescrição</title>
   <meta name="theme-color" content="#5b8c87" />
-  <!-- Sem manifest/apple-touch-icon/service-worker aqui: esta é a versão web
-       com login (não a PWA gratuita instalável em calculadora_npp_v0_5_8-2.html
-       na raiz do repo). Ver docs/superpowers/specs/2026-08-17-npp-calculadora-app-pago-design.md
-       ("Plano 3"). -->
+  <!-- "Adicionar à Tela de Início" (iPhone/Android): manifest + ícone + metas iOS.
+       Deliberadamente SEM service worker: o app depende de rede (Supabase Auth,
+       Stripe, prescrições salvas), e um cache-first aqui arriscaria servir um
+       index.html velho depois de um deploy. -->
+  <link rel="manifest" href="manifest.json" />
+  <link rel="apple-touch-icon" href="icons/apple-touch-icon.png" />
+  <meta name="apple-mobile-web-app-capable" content="yes" />
+  <meta name="mobile-web-app-capable" content="yes" />
+  <meta name="apple-mobile-web-app-title" content="NPPCalc" />
+  <meta name="apple-mobile-web-app-status-bar-style" content="default" />
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.js"></script>
   <script src="config.js"></script>
   <style>

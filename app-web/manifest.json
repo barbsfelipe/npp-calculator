@@ -1,0 +1,16 @@
+{
+  "name": "NPPCalc — Calculadora de NPP",
+  "short_name": "NPPCalc",
+  "description": "Calculadora de Nutrição Parenteral (NPP) — Prescrição",
+  "start_url": "./",
+  "scope": "./",
+  "display": "standalone",
+  "orientation": "portrait",
+  "background_color": "#f5f6f8",
+  "theme_color": "#5b8c87",
+  "lang": "pt-BR",
+  "icons": [
+    { "src": "icons/icon-192.png", "sizes": "192x192", "type": "image/png" },
+    { "src": "icons/icon-512.png", "sizes": "512x512", "type": "image/png" }
+  ]
+}

@@ -6,6 +6,8 @@ on:
     paths:
       - 'app-web/index.html'
       - 'app-web/config.js'
+      - 'app-web/manifest.json'
+      - 'app-web/icons/**'
 
 jobs:
   sync:
@@ -17,6 +19,8 @@ jobs:
           sparse-checkout: |
             app-web/index.html
             app-web/config.js
+            app-web/manifest.json
+            app-web/icons/
           sparse-checkout-cone-mode: false
 
       - name: Checkout nppcalc-web (deploy target)
@@ -30,13 +34,16 @@ jobs:
         run: |
           cp app-web/index.html nppcalc-web/index.html
           cp app-web/config.js nppcalc-web/config.js
+          cp app-web/manifest.json nppcalc-web/manifest.json
+          mkdir -p nppcalc-web/icons
+          cp app-web/icons/*.png nppcalc-web/icons/
 
       - name: Commit and push if changed
         working-directory: nppcalc-web
         run: |
           git config user.name "github-actions[bot]"
           git config user.email "github-actions[bot]@users.noreply.github.com"
-          git add index.html config.js
+          git add index.html config.js manifest.json icons
           if git diff --cached --quiet; then
             echo "No changes to sync."
             exit 0
